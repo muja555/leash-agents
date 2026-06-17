@@ -1,0 +1,27 @@
+{
+  "name": "leash-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Leash M1 backend — one real x402 payment on XRPL testnet, with the policy engine in the loop.",
+  "type": "module",
+  "scripts": {
+    "m1": "tsx src/main.ts",
+    "merchant": "tsx src/server/merchant.ts",
+    "agent": "tsx src/agent/m1.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "xrpl": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

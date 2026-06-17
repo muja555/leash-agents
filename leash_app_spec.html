@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leash — Agentic Payments on XRPL · Build Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116; --panel:#151B23; --panel-2:#1B232E; --raised:#212B38;
+    --line:#2A333F; --line-soft:#222B36;
+    --text:#E8EDF4; --muted:#94A2B3; --faint:#647183;
+    --gold:#E8B23A; --gold-dim:#3a2f16;
+    --green:#41C46B; --green-dim:#16301f;
+    --red:#EB5757; --red-dim:#341a1c;
+    --blue:#5C9CFF; --blue-dim:#16243f;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}}
+  body{
+    margin:0; background:var(--ink); color:var(--text);
+    font-family:'Inter',system-ui,sans-serif; line-height:1.6;
+    font-size:15.5px; letter-spacing:.005em;
+    background-image:radial-gradient(900px 500px at 78% -8%, rgba(92,156,255,.07), transparent 60%),
+                     radial-gradient(700px 400px at 8% 0%, rgba(232,178,58,.06), transparent 55%);
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:0 22px 90px;}
+
+  /* sticky nav */
+  nav.bar{
+    position:sticky; top:0; z-index:20; backdrop-filter:blur(10px);
+    background:rgba(14,17,22,.82); border-bottom:1px solid var(--line-soft);
+  }
+  nav.bar .inner{max-width:1080px; margin:0 auto; padding:11px 22px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  nav.bar .mark{font-family:'Space Grotesk'; font-weight:700; letter-spacing:.04em; font-size:15px;}
+  nav.bar .mark .dot{color:var(--gold);}
+  nav.bar a{color:var(--muted); text-decoration:none; font-size:12.5px;
+    font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:.08em;}
+  nav.bar a:hover,nav.bar a:focus{color:var(--text);}
+  nav.bar .links{display:flex; gap:16px; flex-wrap:wrap; margin-left:auto;}
+
+  /* hero */
+  header.hero{padding:62px 0 30px; border-bottom:1px solid var(--line-soft);}
+  .eyebrow{font-family:'JetBrains Mono'; font-size:12px; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--gold); margin:0 0 18px;}
+  h1{font-family:'Space Grotesk'; font-weight:700; font-size:clamp(34px,6vw,58px);
+    line-height:1.02; margin:0 0 8px; letter-spacing:-.02em;}
+  h1 .leash{color:var(--gold);}
+  .sub{font-size:15px; color:var(--muted); font-family:'JetBrains Mono'; margin:0 0 26px;}
+  .thesis{max-width:680px; font-size:18px; color:var(--text); border-left:2px solid var(--gold);
+    padding:4px 0 4px 18px; margin:0 0 30px;}
+  .thesis b{color:var(--gold); font-weight:600;}
+
+  .chips{display:flex; gap:10px; flex-wrap:wrap;}
+  .chip{font-family:'JetBrains Mono'; font-size:12px; padding:7px 12px; border-radius:999px;
+    border:1px solid var(--line); background:var(--panel); color:var(--muted); display:flex; gap:8px; align-items:center;}
+  .chip b{color:var(--text); font-weight:500;}
+  .chip .led{width:7px; height:7px; border-radius:50%;}
+  .led.g{background:var(--green); box-shadow:0 0 8px var(--green);}
+  .led.a{background:var(--gold); box-shadow:0 0 8px var(--gold);}
+  .led.b{background:var(--blue); box-shadow:0 0 8px var(--blue);}
+
+  /* sections */
+  section{padding:50px 0 6px; scroll-margin-top:64px;}
+  .sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:8px;}
+  .sec-num{font-family:'JetBrains Mono'; color:var(--faint); font-size:13px; letter-spacing:.1em;}
+  h2{font-family:'Space Grotesk'; font-weight:600; font-size:26px; margin:0; letter-spacing:-.01em;}
+  .lead{color:var(--muted); max-width:760px; margin:6px 0 26px;}
+  p{margin:0 0 14px;}
+  a.link{color:var(--blue); text-decoration:none; border-bottom:1px solid rgba(92,156,255,.35);}
+  a.link:hover{border-color:var(--blue);}
+
+  /* concept callout */
+  .concept{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:26px 28px;}
+  .concept p:last-child{margin-bottom:0;}
+  .concept .hl{color:var(--gold); font-weight:600;}
+
+  /* stack grid */
+  .grid{display:grid; gap:14px;}
+  .stack-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));}
+  .layer{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:20px 20px 14px;}
+  .layer h3{font-family:'Space Grotesk'; font-size:13px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--muted); margin:0 0 14px; display:flex; align-items:center; gap:8px;}
+  .layer h3 .tag{width:8px; height:8px; border-radius:2px;}
+  .tag.m{background:var(--blue);} .tag.b{background:var(--gold);} .tag.ai{background:var(--green);} .tag.x{background:#c07cff;}
+  .tool{margin-bottom:13px;}
+  .tool .name{font-family:'JetBrains Mono'; font-size:13.5px; color:var(--text); font-weight:500;}
+  .tool .why{font-size:13px; color:var(--muted); line-height:1.45;}
+  .tool.primary .name::after{content:'PRIMARY'; font-size:9px; letter-spacing:.12em; color:var(--gold);
+    border:1px solid var(--gold-dim); background:var(--gold-dim); padding:1px 6px; border-radius:4px; margin-left:8px; vertical-align:middle;}
+
+  /* payment loop signature */
+  .loop{position:relative; margin-top:10px; padding-left:8px;}
+  .loop::before{content:''; position:absolute; left:25px; top:14px; bottom:14px; width:2px;
+    background:linear-gradient(var(--gold), var(--blue));}
+  .step{position:relative; display:flex; gap:20px; padding:9px 0;}
+  .step .idx{flex:none; width:36px; height:36px; border-radius:50%; background:var(--panel-2);
+    border:1px solid var(--line); display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono'; font-weight:700; font-size:14px; color:var(--gold); z-index:1;}
+  .step.gate .idx{color:var(--red); border-color:var(--red-dim);}
+  .step.pay .idx{color:var(--green); border-color:var(--green-dim);}
+  .step .body{padding-top:5px;}
+  .step .body b{font-family:'Space Grotesk'; font-weight:600;}
+  .step .body span{color:var(--muted); font-size:14px;}
+
+  /* screens */
+  .screens{grid-template-columns:repeat(auto-fit,minmax(330px,1fr));}
+  .screen{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;}
+  .screen .top{padding:16px 20px 14px; border-bottom:1px solid var(--line-soft);}
+  .screen .sname{font-family:'Space Grotesk'; font-weight:600; font-size:17px; display:flex; align-items:center; gap:10px;}
+  .screen .sname .n{font-family:'JetBrains Mono'; font-size:12px; color:var(--faint);}
+  .screen .star{margin-left:auto; font-size:10px; font-family:'JetBrains Mono'; letter-spacing:.1em;
+    color:var(--gold); border:1px solid var(--gold-dim); background:var(--gold-dim); padding:2px 7px; border-radius:5px;}
+  .screen .shows{font-size:13px; color:var(--muted); margin-top:7px; line-height:1.45;}
+  .screen .shows em{color:var(--text); font-style:normal;}
+  table{width:100%; border-collapse:collapse;}
+  .screen td{padding:11px 20px; border-top:1px solid var(--line-soft); vertical-align:top; font-size:13.5px;}
+  .screen td.btn{width:42%; font-family:'JetBrains Mono'; font-size:12.5px; font-weight:500; position:relative; padding-left:28px;}
+  .screen td.btn::before{content:''; position:absolute; left:14px; top:15px; width:7px; height:7px; border-radius:2px; background:var(--faint);}
+  .screen td.btn.kill{color:var(--red);} .screen td.btn.kill::before{background:var(--red); box-shadow:0 0 6px var(--red);}
+  .screen td.btn.go{color:var(--green);} .screen td.btn.go::before{background:var(--green); box-shadow:0 0 6px var(--green);}
+  .screen td.btn.money{color:var(--gold);} .screen td.btn.money::before{background:var(--gold); box-shadow:0 0 6px var(--gold);}
+  .screen td.btn.nav{color:var(--blue);} .screen td.btn.nav::before{background:var(--blue);}
+  .screen td.act{color:var(--muted); line-height:1.45;}
+
+  .legend{display:flex; gap:18px; flex-wrap:wrap; margin:0 0 22px; font-family:'JetBrains Mono'; font-size:12px; color:var(--muted);}
+  .legend span{display:flex; align-items:center; gap:7px;}
+  .legend i{width:8px; height:8px; border-radius:2px; display:inline-block;}
+
+  /* policy pipeline */
+  .pipe{display:flex; align-items:stretch; gap:0; flex-wrap:wrap; margin-top:6px;}
+  .gate-chip{flex:1; min-width:135px; background:var(--panel); border:1px solid var(--line);
+    padding:14px 14px; position:relative; border-radius:10px; margin:5px;}
+  .gate-chip .gn{font-family:'JetBrains Mono'; font-size:11px; color:var(--faint); letter-spacing:.1em;}
+  .gate-chip .gt{font-family:'Space Grotesk'; font-weight:600; font-size:14px; margin-top:4px;}
+  .gate-chip.deny{border-color:var(--red-dim);}
+  .gate-chip.ask{border-color:var(--gold-dim);}
+  .policy-note{background:var(--green-dim); border:1px solid #1f4a30; border-radius:var(--radius);
+    padding:20px 24px; margin-top:18px;}
+  .policy-note b{color:var(--green);}
+
+  /* notes */
+  .notes{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));}
+  .note{background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--gold);
+    border-radius:10px; padding:15px 17px;}
+  .note .nt{font-family:'JetBrains Mono'; font-size:12px; color:var(--gold); letter-spacing:.06em; margin-bottom:5px;}
+  .note p{font-size:13.5px; color:var(--muted); margin:0; line-height:1.5;}
+
+  /* payoffs */
+  .payoffs{grid-template-columns:repeat(auto-fit,minmax(250px,1fr));}
+  .payoff{background:linear-gradient(160deg,var(--panel-2),var(--panel)); border:1px solid var(--line);
+    border-radius:var(--radius); padding:22px;}
+  .payoff .pn{font-family:'JetBrains Mono'; font-size:12px; color:var(--gold); margin-bottom:10px;}
+  .payoff h4{font-family:'Space Grotesk'; font-size:17px; margin:0 0 8px; font-weight:600;}
+  .payoff p{font-size:13.5px; color:var(--muted); margin:0;}
+
+  footer{margin-top:48px; padding-top:22px; border-top:1px solid var(--line-soft);
+    font-family:'JetBrains Mono'; font-size:12px; color:var(--faint); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+
+  :focus-visible{outline:2px solid var(--gold); outline-offset:3px; border-radius:4px;}
+  @media (max-width:560px){ body{font-size:15px;} .screen td.btn{width:48%;} }
+</style>
+</head>
+<body>
+
+<nav class="bar">
+  <div class="inner">
+    <span class="mark">LEASH<span class="dot">.</span></span>
+    <div class="links">
+      <a href="#concept">Concept</a>
+      <a href="#stack">Stack</a>
+      <a href="#loop">Payment loop</a>
+      <a href="#screens">Screens</a>
+      <a href="#policy">Policy engine</a>
+      <a href="#payoffs">Payoffs</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">Build spec · demo that proves the skill</p>
+    <h1><span class="leash">Leash</span></h1>
+    <p class="sub">Agentic payments on XRPL, with mobile oversight · working name</p>
+    <p class="thesis">Not a startup on day one — the one undeniable artifact that proves you can run the whole loop:
+      <b>AI reasoning → real on-chain payment → unlocked resource → human in control.</b> That proof is what you sell.</p>
+    <div class="chips">
+      <span class="chip"><span class="led b"></span>Platform <b>iOS + Android</b></span>
+      <span class="chip"><span class="led a"></span>Settlement <b>XRPL testnet · RLUSD / XRP</b></span>
+      <span class="chip"><span class="led g"></span>Agent <b>Claude + tool use</b></span>
+      <span class="chip">Protocol <b>x402</b></span>
+    </div>
+  </header>
+
+  <section id="concept">
+    <div class="sec-head"><span class="sec-num">01</span><h2>The concept</h2></div>
+    <p class="lead">One job, done convincingly enough that people stop scrolling.</p>
+    <div class="concept">
+      <p>You give an AI agent a <span class="hl">task</span> and a <span class="hl">budget</span>. To do the task it needs paid resources — search, data feeds, model calls, compute. Instead of pre-paying subscriptions, the agent <b>pays per use</b> via x402 micropayments on XRPL from a wallet you fund with an allowance.</p>
+      <p>Your phone is the <span class="hl">control tower</span>: set the policy, watch every cent live, approve anything over a threshold, and hit a kill switch when you want. The demo task is a <b>research agent</b> — ask a question, it spends small amounts to pull paid results, returns a report, and shows exactly what it spent with real on-chain tx hashes you can open in a block explorer. Provable, autonomous, controlled — that's the moment that lands.</p>
+    </div>
+  </section>
+
+  <section id="stack">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Tech stack</h2></div>
+    <p class="lead">Chosen to ship a believable demo in weeks, not to be production-perfect. Lean on the XRPL AI Starter Kit so you don't hand-roll the payment plumbing.</p>
+    <div class="grid stack-grid">
+      <div class="layer">
+        <h3><span class="tag m"></span>Mobile · control tower</h3>
+        <div class="tool primary"><div class="name">React Native + Expo + TS</div><div class="why">Fastest path to both stores; matches your skills. Flutter is a fine alt.</div></div>
+        <div class="tool"><div class="name">Expo Router</div><div class="why">Navigation across the six screens.</div></div>
+        <div class="tool"><div class="name">Zustand + TanStack Query</div><div class="why">UI state + server state.</div></div>
+        <div class="tool"><div class="name">WebSocket / Supabase Realtime</div><div class="why">Powers the live run feed.</div></div>
+        <div class="tool"><div class="name">victory-native</div><div class="why">Budget ring + spend graph.</div></div>
+      </div>
+      <div class="layer">
+        <h3><span class="tag b"></span>Backend · runtime + custody + policy</h3>
+        <div class="tool primary"><div class="name">Node.js + TypeScript</div><div class="why">Tightest fit with xrpl.js + the Starter Kit. Python + FastAPI + xrpl-py is the alt.</div></div>
+        <div class="tool"><div class="name">Fastify + WS gateway</div><div class="why">API plus live event push to mobile.</div></div>
+        <div class="tool"><div class="name">Supabase (Postgres)</div><div class="why">Postgres + auth + realtime in one — saves days.</div></div>
+        <div class="tool"><div class="name">Railway / Fly.io / Cloud Run</div><div class="why">Small always-on service; your cloud of choice.</div></div>
+      </div>
+      <div class="layer">
+        <h3><span class="tag ai"></span>AI · the agent</h3>
+        <div class="tool primary"><div class="name">Claude · Anthropic API</div><div class="why">Tool use: paid endpoints + a pay capability.</div></div>
+        <div class="tool"><div class="name">XRPL AI Starter Kit</div><div class="why">Claude Skills + MCP server give you XRPL + x402 tooling out of the box. Biggest time saver.</div></div>
+      </div>
+      <div class="layer">
+        <h3><span class="tag x"></span>XRPL · settlement</h3>
+        <div class="tool primary"><div class="name">xrpl.js</div><div class="why">Wallet, payments, RLUSD / XRP. (xrpl-py if Python.)</div></div>
+        <div class="tool"><div class="name">x402 flow</div><div class="why">HTTP 402 pay-per-request via the kit's facilitator.</div></div>
+        <div class="tool"><div class="name">Testnet + faucet</div><div class="why">Free, safe, same code paths. Public explorer for proof.</div></div>
+      </div>
+    </div>
+    <div class="note" style="margin-top:16px; border-left-color:var(--red);">
+      <div class="nt" style="color:var(--red);">CUSTODY — STATE THIS OPENLY</div>
+      <p>For a testnet demo the backend holds the agent's seed (encrypted) and the <b style="color:var(--text)">policy engine decides whether to sign</b>. Production would use scoped / smart-account permissions, per-task sub-keys, and rotation. Naming this signals maturity.</p>
+    </div>
+  </section>
+
+  <section id="loop">
+    <div class="sec-head"><span class="sec-num">03</span><h2>The payment loop</h2></div>
+    <p class="lead">The technical heart, and a genuine sequence — build a thin slice of this end to end (one agent, one paid endpoint, one payment on the explorer) before any polish.</p>
+    <div class="loop">
+      <div class="step"><div class="idx">1</div><div class="body"><b>Agent needs a resource</b> <span>— mid-task, it decides it needs paid data.</span></div></div>
+      <div class="step"><div class="idx">2</div><div class="body"><b>Endpoint returns 402</b> <span>— with payment details.</span></div></div>
+      <div class="step gate"><div class="idx">3</div><div class="body"><b>Policy engine intercepts</b> <span>— under caps? budget left? service allowed? not halted? over approval threshold?</span></div></div>
+      <div class="step gate"><div class="idx">4</div><div class="body"><b>Ask the human if required</b> <span>— emits approval_required → phone shows Approve / Deny → waits.</span></div></div>
+      <div class="step pay"><div class="idx">5</div><div class="body"><b>Sign &amp; broadcast on XRPL</b> <span>— xrpl.js Payment; capture tx hash; present x402 proof.</span></div></div>
+      <div class="step pay"><div class="idx">6</div><div class="body"><b>Resource validates proof</b> <span>— returns the data.</span></div></div>
+      <div class="step"><div class="idx">7</div><div class="body"><b>Log + push live</b> <span>— amount, service, hash, ledger index, what it bought → mobile.</span></div></div>
+      <div class="step"><div class="idx">8</div><div class="body"><b>Continue</b> <span>— until task done or budget/policy stops it.</span></div></div>
+    </div>
+  </section>
+
+  <section id="screens">
+    <div class="sec-head"><span class="sec-num">04</span><h2>Screens &amp; actions</h2></div>
+    <p class="lead">Six screens. Every button is colored by what it actually does.</p>
+    <div class="legend">
+      <span><i style="background:var(--red)"></i> Halt / Deny / Block</span>
+      <span><i style="background:var(--green)"></i> Launch / Allow</span>
+      <span><i style="background:var(--gold)"></i> Money / Budget</span>
+      <span><i style="background:var(--blue)"></i> Navigate</span>
+    </div>
+    <div class="grid screens">
+
+      <div class="screen">
+        <div class="top"><div class="sname"><span class="n">S1</span> Dashboard</div>
+          <div class="shows">Agent status (Idle / Working / Paused / Halted), current task, <em>budget ring</em>, live balance, today's spend, recent transactions.</div></div>
+        <table><tbody>
+          <tr><td class="btn nav">New Task</td><td class="act">Opens the Delegate screen.</td></tr>
+          <tr><td class="btn kill">Kill Switch</td><td class="act">Confirms, then sets agent to halted; policy engine rejects all signing; loop stops. The most reassuring button here.</td></tr>
+          <tr><td class="btn nav">Tap budget ring</td><td class="act">Opens Budget &amp; Policy.</td></tr>
+          <tr><td class="btn nav">Tap a transaction</td><td class="act">Opens Transaction detail.</td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="screen">
+        <div class="top"><div class="sname"><span class="n">S2</span> Delegate</div>
+          <div class="shows">Task field, budget control, optional deadline, policy preset, allowed-services multiselect.</div></div>
+        <table><tbody>
+          <tr><td class="btn money">Budget slider</td><td class="act">Sets the total allowance the agent may draw for this task.</td></tr>
+          <tr><td class="btn nav">Choose services</td><td class="act">Writes the per-task allowlist — the agent may only pay these.</td></tr>
+          <tr><td class="btn go">Launch Agent</td><td class="act">Earmarks the allowance, starts the loop, opens the live channel, goes to Live Run.</td></tr>
+          <tr><td class="btn nav">Save as draft</td><td class="act">Persists the task without starting it.</td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="screen">
+        <div class="top"><div class="sname"><span class="n">S3</span> Live Run <span class="star">SHOWPIECE</span></div>
+          <div class="shows">Streaming feed of reasoning steps + <em>payment events</em> ("Paid 0.02 RLUSD → SearchAPI → 50 results"), live spend total, remaining budget.</div></div>
+        <table><tbody>
+          <tr><td class="btn nav">Pause / Resume</td><td class="act">Soft-stops after the current step (recoverable), or resumes.</td></tr>
+          <tr><td class="btn go">Approve</td><td class="act">Signs + broadcasts that specific payment. The human-in-the-loop money shot.</td></tr>
+          <tr><td class="btn kill">Deny</td><td class="act">Rejects it; agent is told the resource is unavailable and re-plans.</td></tr>
+          <tr><td class="btn kill">Stop &amp; Settle</td><td class="act">Ends the run, finalizes the deliverable, goes to Result.</td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="screen">
+        <div class="top"><div class="sname"><span class="n">S4</span> Transaction detail</div>
+          <div class="shows">Amount, service, what it bought, <em>XRPL tx hash</em>, ledger index, timestamp, status.</div></div>
+        <table><tbody>
+          <tr><td class="btn nav">View on Explorer</td><td class="act">Opens the real testnet transaction — proves it's genuinely on-chain. Don't skip this.</td></tr>
+          <tr><td class="btn kill">Block this service</td><td class="act">Adds the recipient to a denylist; future payments to it are refused.</td></tr>
+          <tr><td class="btn nav">Copy hash</td><td class="act">Copies the tx hash.</td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="screen">
+        <div class="top"><div class="sname"><span class="n">S5</span> Budget &amp; Policy</div>
+          <div class="shows">Total allowance, per-tx cap, daily cap, manual-approval threshold, allowlist / denylist, auto-pause toggle.</div></div>
+        <table><tbody>
+          <tr><td class="btn go">Save policy</td><td class="act">Writes the rules the engine consults on every payment, from the next request on.</td></tr>
+          <tr><td class="btn nav">Require approval above…</td><td class="act">Sets the threshold that triggers the Approve / Deny prompt.</td></tr>
+          <tr><td class="btn money">Top up allowance</td><td class="act">Funds the agent wallet (testnet faucet for the demo).</td></tr>
+          <tr><td class="btn money">Reset budget</td><td class="act">Zeroes the spend counter for a new run.</td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="screen">
+        <div class="top"><div class="sname"><span class="n">S6</span> Result</div>
+          <div class="shows">The agent's deliverable plus a <em>cost breakdown</em> ("0.31 RLUSD across 9 paid calls").</div></div>
+        <table><tbody>
+          <tr><td class="btn nav">Export / Share</td><td class="act">Exports the report.</td></tr>
+          <tr><td class="btn nav">Run similar task</td><td class="act">Pre-fills Delegate with the same parameters.</td></tr>
+        </tbody></table>
+      </div>
+
+    </div>
+    <div class="note" style="margin-top:16px; border-left-color:var(--blue);">
+      <div class="nt" style="color:var(--blue);">OPTIONAL — WALLET SCREEN</div>
+      <p>Agent address, XRP + RLUSD balance, QR, history. Buttons: <b style="color:var(--gold)">Fund from faucet</b>, <b style="color:var(--gold)">Sweep unused funds</b>, Copy address. Fold into the Dashboard for a leaner demo.</p>
+    </div>
+  </section>
+
+  <section id="policy">
+    <div class="sec-head"><span class="sec-num">05</span><h2>The policy engine</h2></div>
+    <p class="lead">Your actual differentiator. Everyone builds "an agent that can pay." Almost nobody builds "an agent that pays <em>under control</em>" — and that's what you talk about when you sell the skill. Every payment passes these gates, in order:</p>
+    <div class="pipe">
+      <div class="gate-chip"><div class="gn">GATE 1</div><div class="gt">Not halted</div></div>
+      <div class="gate-chip"><div class="gn">GATE 2</div><div class="gt">Service allowed</div></div>
+      <div class="gate-chip"><div class="gn">GATE 3</div><div class="gt">Per-tx cap</div></div>
+      <div class="gate-chip"><div class="gn">GATE 4</div><div class="gt">Daily cap</div></div>
+      <div class="gate-chip"><div class="gn">GATE 5</div><div class="gt">Total budget</div></div>
+      <div class="gate-chip ask"><div class="gn">GATE 6</div><div class="gt" style="color:var(--gold)">Below approval threshold — else ask the human</div></div>
+    </div>
+    <div class="policy-note">
+      <p style="margin:0;">Anything that fails is refused <b>before a signature is ever produced</b>. This is the part that turns a scary autonomous spender into something a person would actually trust.</p>
+    </div>
+  </section>
+
+  <section id="demo">
+    <div class="sec-head"><span class="sec-num">06</span><h2>Honest demo simplifications</h2></div>
+    <p class="lead">State these openly — they read as judgment, not gaps.</p>
+    <div class="grid notes">
+      <div class="note"><div class="nt">TESTNET ONLY</div><p>No real money at risk; identical code paths; free to run.</p></div>
+      <div class="note"><div class="nt">CUSTODIAL WALLET</div><p>Backend holds the seed for the demo; production uses scoped permissions and rotation.</p></div>
+      <div class="note"><div class="nt">ONE TASK TYPE</div><p>Research is enough to prove the loop; breadth comes later.</p></div>
+      <div class="note"><div class="nt">OWN PAID ENDPOINT</div><p>Stand up your own x402-gated endpoint returning canned data — you control the demo's uptime.</p></div>
+    </div>
+  </section>
+
+  <section id="payoffs">
+    <div class="sec-head"><span class="sec-num">07</span><h2>One build, three payoffs</h2></div>
+    <div class="grid payoffs">
+      <div class="payoff"><div class="pn">PATH 1 · SELL THE SKILL</div><h4>Portfolio piece</h4><p>A demo video that proves the scarce combination — what you point to for contract work, a role, or the teardown content that brings inbound.</p></div>
+      <div class="payoff"><div class="pn">PATH 2 · FUNDING</div><h4>Grant application</h4><p>Open-source, in a funded focus area (payments), with a dev, a repo, and clear milestones. Ready for XRPL Grants.</p></div>
+      <div class="payoff"><div class="pn">PATH 3 · PRODUCT</div><h4>Vertical seed</h4><p>Swap the research task for a real, paid, narrow use case later and you have the start of a product.</p></div>
+    </div>
+    <p class="lead" style="margin-top:26px;">Start with the week-one thin slice — one payment, visible on the explorer. Momentum and proof come from that, not from the polish.</p>
+  </section>
+
+  <footer>
+    <span>LEASH · build spec</span>
+    <span>working name · testnet · not financial advice</span>
+  </footer>
+
+</div>
+</body>
+</html>

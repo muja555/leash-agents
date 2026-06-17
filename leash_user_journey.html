@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leash — User Journey · screens, flow, and connections</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116; --panel:#151B23; --panel-2:#1B232E; --raised:#212B38;
+    --line:#2A333F; --line-soft:#222B36;
+    --text:#E8EDF4; --muted:#94A2B3; --faint:#647183;
+    --gold:#E8B23A; --gold-dim:#3a2f16;
+    --green:#41C46B; --green-dim:#16301f;
+    --red:#EB5757; --red-dim:#341a1c;
+    --blue:#5C9CFF; --blue-dim:#16243f;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}}
+  body{
+    margin:0; background:var(--ink); color:var(--text);
+    font-family:'Inter',system-ui,sans-serif; line-height:1.6;
+    font-size:15.5px; letter-spacing:.005em;
+    background-image:radial-gradient(900px 500px at 78% -8%, rgba(92,156,255,.07), transparent 60%),
+                     radial-gradient(700px 400px at 8% 0%, rgba(232,178,58,.06), transparent 55%);
+  }
+  .wrap{max-width:1140px; margin:0 auto; padding:0 22px 90px;}
+
+  /* sticky nav */
+  nav.bar{
+    position:sticky; top:0; z-index:20; backdrop-filter:blur(10px);
+    background:rgba(14,17,22,.82); border-bottom:1px solid var(--line-soft);
+  }
+  nav.bar .inner{max-width:1140px; margin:0 auto; padding:11px 22px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  nav.bar .mark{font-family:'Space Grotesk'; font-weight:700; letter-spacing:.04em; font-size:15px;}
+  nav.bar .mark .dot{color:var(--gold);}
+  nav.bar a{color:var(--muted); text-decoration:none; font-size:12.5px;
+    font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:.08em;}
+  nav.bar a:hover,nav.bar a:focus{color:var(--text);}
+  nav.bar .links{display:flex; gap:16px; flex-wrap:wrap; margin-left:auto;}
+
+  /* hero */
+  header.hero{padding:54px 0 30px; border-bottom:1px solid var(--line-soft);}
+  .eyebrow{font-family:'JetBrains Mono'; font-size:12px; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--gold); margin:0 0 18px;}
+  h1{font-family:'Space Grotesk'; font-weight:700; font-size:clamp(34px,6vw,54px);
+    line-height:1.04; margin:0 0 8px; letter-spacing:-.02em;}
+  h1 .leash{color:var(--gold);}
+  .sub{font-size:15px; color:var(--muted); font-family:'JetBrains Mono'; margin:0 0 26px;}
+  .thesis{max-width:720px; font-size:17px; color:var(--text); border-left:2px solid var(--gold);
+    padding:4px 0 4px 18px; margin:0 0 26px;}
+  .thesis b{color:var(--gold); font-weight:600;}
+
+  .legend{display:flex; gap:18px; flex-wrap:wrap; margin:18px 0 0; font-family:'JetBrains Mono'; font-size:12px; color:var(--muted);}
+  .legend span{display:flex; align-items:center; gap:7px;}
+  .legend i{width:8px; height:8px; border-radius:2px; display:inline-block;}
+
+  /* goal banner */
+  .goal{margin-top:26px; background:linear-gradient(160deg,var(--panel-2),var(--panel));
+    border:1px solid var(--line); border-radius:var(--radius); padding:20px 24px;
+    display:flex; gap:18px; align-items:center; flex-wrap:wrap;}
+  .goal .gn{font-family:'JetBrains Mono'; font-size:11px; letter-spacing:.18em; color:var(--gold);}
+  .goal .gt{font-family:'Space Grotesk'; font-weight:600; font-size:18px; margin:6px 0 0; line-height:1.35;}
+  .goal .gt em{color:var(--gold); font-style:normal;}
+  .goal .arrow{font-family:'JetBrains Mono'; color:var(--faint);}
+
+  /* sections */
+  section{padding:54px 0 6px; scroll-margin-top:64px;}
+  .sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:8px;}
+  .sec-num{font-family:'JetBrains Mono'; color:var(--faint); font-size:13px; letter-spacing:.1em;}
+  h2{font-family:'Space Grotesk'; font-weight:600; font-size:26px; margin:0; letter-spacing:-.01em;}
+  .lead{color:var(--muted); max-width:780px; margin:6px 0 26px;}
+
+  /* ---------------- FLOW MAP (SVG) ---------------- */
+  .flowwrap{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:22px 18px 12px; overflow-x:auto;}
+  .flowsvg{width:100%; min-width:760px; height:auto; display:block;}
+  .flowkey{display:flex; gap:18px; flex-wrap:wrap; margin-top:8px;
+    font-family:'JetBrains Mono'; font-size:11.5px; color:var(--muted); padding:0 8px 8px;}
+  .flowkey span{display:flex; align-items:center; gap:7px;}
+  .flowkey i{width:14px; height:2px; display:inline-block;}
+  .flowkey i.solid{background:var(--green);}
+  .flowkey i.dashed{background:repeating-linear-gradient(90deg, var(--gold) 0 3px, transparent 3px 6px);}
+  .flowkey i.loop{background:repeating-linear-gradient(90deg, var(--blue) 0 3px, transparent 3px 6px);}
+
+  /* ---------------- PHONE WIREFRAMES ---------------- */
+  .phone{
+    background:#0a0d12; border:1px solid var(--line); border-radius:24px;
+    padding:12px 8px 10px; width:100%; max-width:200px; margin:0 auto;
+    box-shadow:0 6px 20px rgba(0,0,0,.35);
+  }
+  .phone .notch{width:42px; height:4px; background:var(--line); border-radius:3px; margin:0 auto 8px;}
+  .phone .scrn{background:var(--panel); border-radius:16px; padding:10px 9px;
+    display:flex; flex-direction:column; gap:7px; min-height:340px;}
+  .phone .scrn.live{background:linear-gradient(180deg, var(--panel) 0%, #182124 100%);}
+
+  .ph-head{display:flex; justify-content:space-between; align-items:center; padding-bottom:2px;}
+  .ph-title{font-family:'Space Grotesk'; font-weight:600; font-size:12px;}
+  .ph-back{font-family:'JetBrains Mono'; font-size:11px; color:var(--muted);}
+  .pill{font-family:'JetBrains Mono'; font-size:8.5px; padding:2px 7px; border-radius:999px;
+    letter-spacing:.06em;}
+  .pill.idle{background:var(--line); color:var(--muted);}
+  .pill.live{background:var(--green-dim); color:var(--green);}
+  .pill.ok  {background:var(--green-dim); color:var(--green);}
+  .pill.warn{background:var(--gold-dim);  color:var(--gold);}
+  .pill .blink{display:inline-block; width:5px; height:5px; border-radius:50%;
+    background:var(--green); margin-right:4px; box-shadow:0 0 6px var(--green); vertical-align:middle;}
+
+  .ring{display:flex; justify-content:center; margin:2px 0 2px;}
+  .ring svg{width:88px; height:88px;}
+  .ring.mini svg{width:62px; height:62px;}
+
+  .ph-row{display:flex; justify-content:space-between; gap:6px;
+    font-family:'JetBrains Mono'; font-size:9px; color:var(--muted);}
+  .ph-stat b{color:var(--text); font-weight:600;}
+
+  .pbtn{font-family:'JetBrains Mono'; font-size:9.5px; padding:7px 8px; border-radius:6px;
+    text-align:center; font-weight:500; letter-spacing:.03em;}
+  .pbtn.full{width:100%;}
+  .pbtn.go   {background:var(--green-dim); color:var(--green); border:1px solid var(--green-dim);}
+  .pbtn.kill {background:var(--red-dim);   color:var(--red);   border:1px solid var(--red-dim);}
+  .pbtn.money{background:var(--gold-dim);  color:var(--gold);  border:1px solid var(--gold-dim);}
+  .pbtn.nav  {background:var(--blue-dim);  color:var(--blue);  border:1px solid var(--blue-dim);}
+  .pbtn.ghost{background:transparent; border:1px dashed currentColor;}
+  .pbtn-row{display:flex; gap:6px;}
+  .pbtn-row .pbtn{flex:1;}
+
+  .ph-label{font-family:'JetBrains Mono'; font-size:8.5px; color:var(--faint);
+    letter-spacing:.12em; text-transform:uppercase; margin-top:2px;}
+  .ph-tx{display:flex; gap:6px; align-items:center;
+    font-family:'JetBrains Mono'; font-size:9.5px; color:var(--muted);
+    padding:4px 4px; border-bottom:1px solid var(--line-soft);}
+  .ph-tx:last-child{border-bottom:none;}
+  .ph-tx .amt{color:var(--text);}
+  .dot{width:5px; height:5px; border-radius:50%; display:inline-block; flex:none;}
+  .dot.green{background:var(--green);}
+  .dot.gold {background:var(--gold);}
+  .dot.blue {background:var(--blue);}
+  .dot.red  {background:var(--red);}
+
+  .ph-field{background:var(--ink); border:1px solid var(--line); border-radius:5px;
+    padding:6px 8px; font-size:9.5px; color:var(--muted); font-family:'Inter';}
+  .ph-field.t{color:var(--text);}
+  .ph-field.lg{padding:9px 8px;}
+
+  .ph-slider{background:var(--ink); border-radius:4px; height:5px; position:relative; margin:2px 0;}
+  .ph-slider .fill{position:absolute; left:0; top:0; height:5px; border-radius:4px;
+    background:linear-gradient(90deg, var(--gold-dim), var(--gold));}
+  .ph-slider .knob{position:absolute; top:-4px; width:11px; height:11px; background:var(--gold);
+    border-radius:50%; border:2px solid var(--ink); transform:translateX(-50%);}
+
+  .ph-chips{display:flex; flex-wrap:wrap; gap:4px;}
+  .ph-chip{background:var(--ink); border:1px solid var(--line); padding:3px 7px;
+    border-radius:999px; font-family:'JetBrains Mono'; font-size:8.5px; color:var(--muted);}
+  .ph-chip.on{color:var(--blue); border-color:var(--blue-dim); background:var(--blue-dim);}
+
+  .ph-feed{background:var(--ink); border-radius:6px; padding:8px;
+    display:flex; flex-direction:column; gap:5px;
+    font-family:'JetBrains Mono'; font-size:9px; line-height:1.35;
+    border:1px solid var(--line); flex:1;}
+  .ph-feed .think{color:var(--muted);}
+  .ph-feed .pay  {color:var(--green);}
+  .ph-feed .pay .h{color:var(--faint);}
+
+  .ph-bars{display:flex; flex-direction:column; gap:4px;}
+  .ph-bars div{background:var(--line); height:5px; border-radius:3px;}
+  .ph-bars div:nth-child(2){width:85%;}
+  .ph-bars div:nth-child(3){width:60%;}
+  .ph-bars div:nth-child(4){width:78%;}
+  .ph-bars div:nth-child(5){width:40%;}
+
+  .ph-cost{background:rgba(232,178,58,.08); border:1px solid var(--gold-dim);
+    border-radius:6px; padding:8px;}
+  .ph-cost b{font-family:'Space Grotesk'; font-size:13px; color:var(--gold); display:block; line-height:1.1;}
+  .ph-cost small{font-family:'JetBrains Mono'; font-size:8.5px; color:var(--muted); display:block; margin-top:2px;}
+
+  .ph-modal{position:relative; background:var(--gold-dim); border:1px solid var(--gold-dim);
+    border-radius:8px; padding:9px; font-family:'JetBrains Mono'; font-size:9.5px;}
+  .ph-modal .mt{color:var(--gold); font-weight:600;}
+  .ph-modal .ma{color:var(--muted); margin-top:2px;}
+
+  .ph-amount{font-family:'Space Grotesk'; font-weight:600; font-size:18px; text-align:center;
+    color:var(--gold); margin:4px 0 2px;}
+  .ph-amount small{display:block; font-family:'JetBrains Mono'; font-size:9px;
+    color:var(--muted); font-weight:400; margin-top:2px;}
+  .ph-kv{display:flex; justify-content:space-between; font-family:'JetBrains Mono';
+    font-size:9.5px; padding:3px 0; border-bottom:1px solid var(--line-soft);}
+  .ph-kv:last-of-type{border-bottom:none;}
+  .ph-kv .k{color:var(--faint);}
+  .ph-kv .v{color:var(--text);}
+  .ph-kv .v.hash{color:var(--gold);}
+
+  /* ---------------- JOURNEY TIMELINE ---------------- */
+  .journey{position:relative; padding-left:8px;}
+  .journey::before{content:''; position:absolute; left:25px; top:18px; bottom:18px; width:2px;
+    background:linear-gradient(var(--gold), var(--blue) 50%, var(--green));}
+
+  .stop{position:relative; display:grid; grid-template-columns:64px 1fr; gap:0; padding:14px 0 22px;}
+  .stop .pin{
+    grid-column:1; width:36px; height:36px; border-radius:50%; background:var(--panel-2);
+    border:1px solid var(--line); display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono'; font-weight:700; font-size:14px; color:var(--gold); z-index:1;
+    margin-top:4px;
+  }
+  .stop.start .pin{color:var(--blue); border-color:var(--blue-dim);}
+  .stop.act   .pin{color:var(--gold); border-color:var(--gold-dim);}
+  .stop.live  .pin{color:var(--green); border-color:var(--green-dim);}
+  .stop.end   .pin{color:var(--green); border-color:var(--green-dim);}
+  .stop .card{
+    grid-column:2; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px 20px;
+  }
+  .stop .row{display:grid; grid-template-columns:200px 1fr 0.85fr; gap:22px; align-items:start;}
+  @media (max-width:980px){
+    .stop .row{grid-template-columns:200px 1fr;}
+    .stop .behind{grid-column:1 / -1;}
+  }
+  @media (max-width:620px){
+    .stop .row{grid-template-columns:1fr;}
+    .stop .phonecell{justify-self:center;}
+  }
+  .phonecell{justify-self:start;}
+
+  .stop .stag{display:flex; align-items:center; gap:10px; margin:0 0 4px;}
+  .stop .snum{font-family:'JetBrains Mono'; font-size:11px; color:var(--faint); letter-spacing:.12em;}
+  .stop .sname{font-family:'Space Grotesk'; font-weight:600; font-size:17px;}
+  .stop .sname .badge{font-family:'JetBrains Mono'; font-size:11px; color:var(--gold);
+    border:1px solid var(--gold-dim); background:var(--gold-dim); padding:2px 7px;
+    border-radius:5px; margin-left:8px; vertical-align:middle; letter-spacing:.08em;}
+  .stop .what{color:var(--muted); font-size:13.5px; margin:6px 0 12px; line-height:1.5;}
+  .stop .what em{color:var(--text); font-style:normal;}
+
+  .actions{display:flex; flex-direction:column; gap:8px;}
+  .action{
+    font-family:'JetBrains Mono'; font-size:12.5px; padding:10px 12px 10px 30px;
+    border-radius:8px; background:var(--panel-2); border:1px solid var(--line);
+    position:relative; color:var(--text);
+  }
+  .action::before{content:''; position:absolute; left:12px; top:14px;
+    width:9px; height:9px; border-radius:2px; background:var(--faint);}
+  .action.kill {color:var(--red);}   .action.kill::before {background:var(--red);   box-shadow:0 0 6px var(--red);}
+  .action.go   {color:var(--green);} .action.go::before   {background:var(--green); box-shadow:0 0 6px var(--green);}
+  .action.money{color:var(--gold);}  .action.money::before{background:var(--gold);  box-shadow:0 0 6px var(--gold);}
+  .action.nav  {color:var(--blue);}  .action.nav::before  {background:var(--blue);}
+  .action small{display:block; font-family:'Inter'; font-size:12px; color:var(--muted); margin-top:3px; letter-spacing:0;}
+  .action .goesto{font-family:'JetBrains Mono'; font-size:11px; color:var(--faint);
+    margin-top:5px; display:block; letter-spacing:.04em;}
+  .action .goesto b{color:var(--text); font-weight:600;}
+
+  .behind{
+    background:var(--ink); border:1px dashed var(--line); border-radius:10px;
+    padding:14px 16px; font-size:13px; color:var(--muted); line-height:1.5;
+  }
+  .behind .bn{font-family:'JetBrains Mono'; font-size:10.5px; color:var(--faint); letter-spacing:.14em; margin-bottom:6px;}
+  .behind b{color:var(--text); font-weight:600;}
+  .behind code{font-family:'JetBrains Mono'; font-size:12px; color:var(--gold);}
+
+  /* loop diagram inside live run */
+  .loopbox{
+    margin:14px 0 4px; background:var(--ink); border:1px solid var(--line);
+    border-radius:12px; padding:14px 16px;
+  }
+  .loopbox .ln{font-family:'JetBrains Mono'; font-size:11px; color:var(--gold); letter-spacing:.14em; margin-bottom:10px;}
+  .loopflow{display:flex; flex-wrap:wrap; gap:7px; align-items:center;}
+  .lf{font-family:'JetBrains Mono'; font-size:11.5px; padding:6px 9px; border-radius:7px;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);}
+  .lf.gate{color:var(--red); border-color:var(--red-dim);}
+  .lf.ask {color:var(--gold); border-color:var(--gold-dim);}
+  .lf.pay {color:var(--green); border-color:var(--green-dim);}
+  .lf.log {color:var(--blue); border-color:var(--blue-dim);}
+  .arrow-i{color:var(--faint); font-family:'JetBrains Mono'; font-size:13px;}
+
+  /* sidequests */
+  .sidequests{
+    margin-top:8px; padding:22px 22px;
+    background:linear-gradient(160deg, rgba(92,156,255,.05), rgba(232,178,58,.04));
+    border:1px solid var(--line); border-radius:14px;
+  }
+  .sidequests .sqh{font-family:'JetBrains Mono'; font-size:11px; color:var(--blue);
+    letter-spacing:.14em; margin-bottom:4px;}
+  .sidequests .sqt{font-family:'Space Grotesk'; font-weight:600; font-size:16px; margin-bottom:18px;}
+
+  /* sidequest screens row (phone wireframes for S4 and S5) */
+  .sqscreens{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; margin-bottom:18px;}
+  .sqscreen{display:grid; grid-template-columns:200px 1fr; gap:16px; align-items:start;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px;}
+  @media (max-width:520px){ .sqscreen{grid-template-columns:1fr;} .sqscreen .pcell{justify-self:center;} }
+  .sqscreen .pcell{justify-self:start;}
+  .sqscreen .stag{display:flex; align-items:center; gap:10px;}
+  .sqscreen .sname{font-family:'Space Grotesk'; font-weight:600; font-size:15px;}
+  .sqscreen .badge{font-family:'JetBrains Mono'; font-size:10.5px; color:var(--gold);
+    border:1px solid var(--gold-dim); background:var(--gold-dim);
+    padding:2px 6px; border-radius:5px; letter-spacing:.08em;}
+  .sqscreen .open-from{font-family:'JetBrains Mono'; font-size:11px; color:var(--faint);
+    margin:6px 0 8px; letter-spacing:.04em;}
+  .sqscreen .open-from b{color:var(--text); font-weight:600;}
+  .sqscreen p{font-size:13px; color:var(--muted); margin:0 0 10px; line-height:1.5;}
+
+  /* sidequest action chips */
+  .sqgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px;}
+  .sq{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:13px 14px;}
+  .sq .sqn{font-family:'JetBrains Mono'; font-size:11px; letter-spacing:.1em; margin-bottom:6px;}
+  .sq.kill .sqn{color:var(--red);}
+  .sq.go   .sqn{color:var(--green);}
+  .sq.money .sqn{color:var(--gold);}
+  .sq.nav  .sqn{color:var(--blue);}
+  .sq p{font-size:13px; color:var(--muted); margin:0; line-height:1.45;}
+  .sq p b{color:var(--text); font-weight:600;}
+
+  /* moments callout grid */
+  .moments{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}
+  .moment{background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--gold);
+    border-radius:10px; padding:16px 18px;}
+  .moment.green{border-left-color:var(--green);}
+  .moment.red  {border-left-color:var(--red);}
+  .moment.blue {border-left-color:var(--blue);}
+  .moment .mn{font-family:'JetBrains Mono'; font-size:11px; color:var(--gold); letter-spacing:.12em; margin-bottom:6px;}
+  .moment.green .mn{color:var(--green);}
+  .moment.red   .mn{color:var(--red);}
+  .moment.blue  .mn{color:var(--blue);}
+  .moment h4{font-family:'Space Grotesk'; font-size:15px; margin:0 0 6px; font-weight:600;}
+  .moment p{font-size:13px; color:var(--muted); margin:0; line-height:1.5;}
+
+  footer{margin-top:48px; padding-top:22px; border-top:1px solid var(--line-soft);
+    font-family:'JetBrains Mono'; font-size:12px; color:var(--faint);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+
+  :focus-visible{outline:2px solid var(--gold); outline-offset:3px; border-radius:4px;}
+  @media (max-width:560px){ body{font-size:15px;} .stop{grid-template-columns:48px 1fr;} }
+</style>
+</head>
+<body>
+
+<nav class="bar">
+  <div class="inner">
+    <span class="mark">LEASH<span class="dot">.</span> <span style="color:var(--muted); font-weight:500;">/ user journey</span></span>
+    <div class="links">
+      <a href="#goal">Goal</a>
+      <a href="#map">Screen map</a>
+      <a href="#path">Walk the path</a>
+      <a href="#sidequests">Sidequests</a>
+      <a href="#moments">Moments</a>
+      <a href="leash_app_spec.html">Full spec ↗</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">User journey · screens, flow, and connections</p>
+    <h1><span class="leash">Leash</span> — what the user actually sees</h1>
+    <p class="sub">Each screen in simple wireframes, the connections between them, and the path from task to verified report.</p>
+    <p class="thesis">Six screens. One <b>happy path</b>: S1 → S2 → S3 → S6. Two <b>branches</b> you can open any time: S4 (Tx detail) and S5 (Budget &amp; policy). The agent does the work, the human stays in command.</p>
+
+    <div class="legend">
+      <span><i style="background:var(--red)"></i> Halt / Deny / Block</span>
+      <span><i style="background:var(--green)"></i> Launch / Allow</span>
+      <span><i style="background:var(--gold)"></i> Money / Budget</span>
+      <span><i style="background:var(--blue)"></i> Navigate</span>
+    </div>
+
+    <div class="goal" id="goal">
+      <div>
+        <div class="gn">THE END-TO-END GOAL</div>
+        <div class="gt"><em>Question + budget</em> &nbsp;<span class="arrow">→</span>&nbsp; agent pays per use on XRPL &nbsp;<span class="arrow">→</span>&nbsp; <em>sourced report</em> with explorer-verifiable receipts.</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============== SCREEN CONNECTION MAP ============== -->
+  <section id="map">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Screen connection map</h2></div>
+    <p class="lead">How the six screens link. Top row is the happy path; the two branches drop down from S1 and S3. The dashed loop at the bottom shows "Run similar" sending you back to a fresh delegation.</p>
+
+    <div class="flowwrap">
+      <svg viewBox="0 0 900 400" class="flowsvg" xmlns="http://www.w3.org/2000/svg" aria-label="Screen connection diagram">
+        <defs>
+          <marker id="arr-blue"  viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#5C9CFF"/></marker>
+          <marker id="arr-gold"  viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#E8B23A"/></marker>
+          <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#41C46B"/></marker>
+          <marker id="arr-red"   viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#EB5757"/></marker>
+          <marker id="arr-grey"  viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#94A2B3"/></marker>
+        </defs>
+
+        <!-- ========== MAIN ROW (S1 → S2 → S3 → S6) ========== -->
+        <g>
+          <rect x="40"  y="40" width="150" height="78" rx="11" fill="#1B232E" stroke="#5C9CFF" stroke-width="1.5"/>
+          <text x="115" y="64"  text-anchor="middle" fill="#5C9CFF" font-family="JetBrains Mono" font-size="10" letter-spacing="2">S1 · ENTRY</text>
+          <text x="115" y="86"  text-anchor="middle" fill="#E8EDF4" font-family="Space Grotesk" font-size="15" font-weight="600">Dashboard</text>
+          <text x="115" y="105" text-anchor="middle" fill="#94A2B3" font-family="Inter" font-size="10">status · budget · recent</text>
+        </g>
+        <g>
+          <rect x="240" y="40" width="150" height="78" rx="11" fill="#1B232E" stroke="#94A2B3" stroke-width="1.5"/>
+          <text x="315" y="64"  text-anchor="middle" fill="#94A2B3" font-family="JetBrains Mono" font-size="10" letter-spacing="2">S2</text>
+          <text x="315" y="86"  text-anchor="middle" fill="#E8EDF4" font-family="Space Grotesk" font-size="15" font-weight="600">Delegate</text>
+          <text x="315" y="105" text-anchor="middle" fill="#94A2B3" font-family="Inter" font-size="10">task · budget · services</text>
+        </g>
+        <g>
+          <rect x="440" y="40" width="150" height="78" rx="11" fill="#1B232E" stroke="#41C46B" stroke-width="1.5"/>
+          <text x="515" y="64"  text-anchor="middle" fill="#41C46B" font-family="JetBrains Mono" font-size="10" letter-spacing="2">S3 · SHOWPIECE</text>
+          <text x="515" y="86"  text-anchor="middle" fill="#E8EDF4" font-family="Space Grotesk" font-size="15" font-weight="600">Live Run</text>
+          <text x="515" y="105" text-anchor="middle" fill="#94A2B3" font-family="Inter" font-size="10">feed · payments · controls</text>
+        </g>
+        <g>
+          <rect x="640" y="40" width="150" height="78" rx="11" fill="#1B232E" stroke="#41C46B" stroke-width="1.5"/>
+          <text x="715" y="64"  text-anchor="middle" fill="#41C46B" font-family="JetBrains Mono" font-size="10" letter-spacing="2">S6 · END</text>
+          <text x="715" y="86"  text-anchor="middle" fill="#E8EDF4" font-family="Space Grotesk" font-size="15" font-weight="600">Result</text>
+          <text x="715" y="105" text-anchor="middle" fill="#94A2B3" font-family="Inter" font-size="10">report · cost breakdown</text>
+        </g>
+
+        <!-- ========== BRANCH ROW (S5, S4) ========== -->
+        <g>
+          <rect x="240" y="250" width="150" height="78" rx="11" fill="#1B232E" stroke="#E8B23A" stroke-width="1.5"/>
+          <text x="315" y="274" text-anchor="middle" fill="#E8B23A" font-family="JetBrains Mono" font-size="10" letter-spacing="2">S5 · BRANCH</text>
+          <text x="315" y="296" text-anchor="middle" fill="#E8EDF4" font-family="Space Grotesk" font-size="15" font-weight="600">Budget &amp; Policy</text>
+          <text x="315" y="315" text-anchor="middle" fill="#94A2B3" font-family="Inter" font-size="10">caps · threshold · allowlist</text>
+        </g>
+        <g>
+          <rect x="440" y="250" width="150" height="78" rx="11" fill="#1B232E" stroke="#94A2B3" stroke-width="1.5"/>
+          <text x="515" y="274" text-anchor="middle" fill="#94A2B3" font-family="JetBrains Mono" font-size="10" letter-spacing="2">S4 · BRANCH</text>
+          <text x="515" y="296" text-anchor="middle" fill="#E8EDF4" font-family="Space Grotesk" font-size="15" font-weight="600">Tx Detail</text>
+          <text x="515" y="315" text-anchor="middle" fill="#94A2B3" font-family="Inter" font-size="10">hash · explorer · block</text>
+        </g>
+
+        <!-- ========== MAIN ARROWS ========== -->
+        <line x1="190" y1="79" x2="235" y2="79" stroke="#5C9CFF" stroke-width="1.8" marker-end="url(#arr-blue)"/>
+        <text x="212" y="72" text-anchor="middle" fill="#5C9CFF" font-family="JetBrains Mono" font-size="10">New Task</text>
+
+        <line x1="390" y1="79" x2="435" y2="79" stroke="#41C46B" stroke-width="1.8" marker-end="url(#arr-green)"/>
+        <text x="412" y="72" text-anchor="middle" fill="#41C46B" font-family="JetBrains Mono" font-size="10">Launch</text>
+
+        <line x1="590" y1="79" x2="635" y2="79" stroke="#EB5757" stroke-width="1.8" marker-end="url(#arr-red)"/>
+        <text x="612" y="72" text-anchor="middle" fill="#EB5757" font-family="JetBrains Mono" font-size="10">Stop &amp; Settle</text>
+
+        <!-- alt: auto-end into Result -->
+        <text x="612" y="135" text-anchor="middle" fill="#94A2B3" font-family="JetBrains Mono" font-size="9" font-style="italic">(or task completes)</text>
+
+        <!-- ========== BRANCH ARROWS ========== -->
+        <!-- S1 → S5 (Tap budget ring) -->
+        <path d="M 90 118 Q 90 200 240 280" stroke="#E8B23A" stroke-width="1.5" fill="none"
+              stroke-dasharray="5 4" marker-end="url(#arr-gold)"/>
+        <text x="110" y="200" fill="#E8B23A" font-family="JetBrains Mono" font-size="10">Tap ring</text>
+
+        <!-- S1 → S4 (Tap recent tx) -->
+        <path d="M 140 118 Q 200 180 460 270" stroke="#94A2B3" stroke-width="1.5" fill="none"
+              stroke-dasharray="5 4" marker-end="url(#arr-grey)"/>
+        <text x="245" y="180" fill="#94A2B3" font-family="JetBrains Mono" font-size="10">Tap recent tx</text>
+
+        <!-- S3 → S5 (Adjust mid-run) -->
+        <path d="M 470 118 Q 410 180 360 250" stroke="#E8B23A" stroke-width="1.5" fill="none"
+              stroke-dasharray="5 4" marker-end="url(#arr-gold)"/>
+        <text x="378" y="190" fill="#E8B23A" font-family="JetBrains Mono" font-size="10" text-anchor="middle">Adjust mid-run</text>
+
+        <!-- S3 → S4 (Tap tx in feed) -->
+        <line x1="515" y1="118" x2="515" y2="247" stroke="#94A2B3" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr-grey)"/>
+        <text x="525" y="195" fill="#94A2B3" font-family="JetBrains Mono" font-size="10">Tap tx</text>
+
+        <!-- S6 → S2 loop (Run similar) -->
+        <path d="M 715 118 Q 715 380 470 380 L 360 380 Q 315 380 315 328" stroke="#5C9CFF"
+              stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#arr-blue)"/>
+        <text x="540" y="375" text-anchor="middle" fill="#5C9CFF" font-family="JetBrains Mono" font-size="10">Run similar · loops back to a fresh delegation</text>
+
+        <!-- ========== KILL SWITCH note ========== -->
+        <g transform="translate(40, 360)">
+          <rect x="0" y="0" width="150" height="30" rx="6" fill="#341a1c" stroke="#EB5757" stroke-width="1"/>
+          <text x="75" y="20" text-anchor="middle" fill="#EB5757" font-family="JetBrains Mono" font-size="10">Kill Switch · S1 + S3</text>
+        </g>
+      </svg>
+
+      <div class="flowkey">
+        <span><i class="solid"></i> Solid = main happy path</span>
+        <span><i class="dashed"></i> Dashed = branch (any time)</span>
+        <span><i class="loop"></i> Loop = re-run from a result</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== WALK THE PATH ============== -->
+  <section id="path">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Walk the path · 4 stops</h2></div>
+    <p class="lead">Each stop shows <em>what the screen looks like</em>, <em>what the user does</em>, and <em>where each button takes them</em>.</p>
+
+    <div class="journey">
+
+      <!-- ============ STOP 1 · S1 DASHBOARD ============ -->
+      <div class="stop start">
+        <div class="pin">1</div>
+        <div class="card">
+          <div class="row">
+
+            <div class="phonecell">
+              <div class="phone">
+                <div class="notch"></div>
+                <div class="scrn">
+                  <div class="ph-head">
+                    <span class="ph-title">Leash</span>
+                    <span class="pill idle">IDLE</span>
+                  </div>
+                  <div class="ring">
+                    <svg viewBox="0 0 100 100" aria-hidden="true">
+                      <circle cx="50" cy="50" r="38" stroke="#2A333F" stroke-width="7" fill="none"/>
+                      <circle cx="50" cy="50" r="38" stroke="#E8B23A" stroke-width="7" fill="none"
+                              stroke-dasharray="239" stroke-dashoffset="48"
+                              stroke-linecap="round" transform="rotate(-90 50 50)"/>
+                      <text x="50" y="48" text-anchor="middle" fill="#E8EDF4" font-size="14" font-family="Space Grotesk" font-weight="700">$42</text>
+                      <text x="50" y="62" text-anchor="middle" fill="#94A2B3" font-size="7" font-family="JetBrains Mono">LEFT</text>
+                    </svg>
+                  </div>
+                  <div class="ph-row">
+                    <span class="ph-stat">Spent <b>$8</b></span>
+                    <span class="ph-stat">Bal <b>32</b> RLUSD</span>
+                  </div>
+                  <div class="pbtn nav full">+ New Task</div>
+                  <div class="ph-label">Recent</div>
+                  <div class="ph-tx"><span class="dot green"></span><span class="amt">0.02</span><span>SearchAPI</span></div>
+                  <div class="ph-tx"><span class="dot green"></span><span class="amt">0.03</span><span>DataFeed</span></div>
+                  <div class="pbtn kill full ghost" style="margin-top:auto;">Kill Switch</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="stag"><span class="snum">STOP 1</span><span class="sname">Open the app <span class="badge">S1 · DASHBOARD</span></span></div>
+              <p class="what">Agent at rest. The person sees the <em>budget ring</em>, balance, today's spend, and recent runs. Reassuring before they hand over any control.</p>
+              <div class="actions">
+                <div class="action nav">+ New Task<small>Opens the Delegate screen to start a task.</small><span class="goesto">→ <b>S2 Delegate</b></span></div>
+                <div class="action nav">Tap budget ring<small>Jump to policy editing.</small><span class="goesto">→ <b>S5 Budget &amp; Policy</b></span></div>
+                <div class="action nav">Tap a recent tx<small>Inspect a past payment.</small><span class="goesto">→ <b>S4 Tx Detail</b></span></div>
+                <div class="action kill">Kill Switch<small>Always one tap away — even with no run in flight.</small><span class="goesto">→ <b>policy refuses every future signature</b></span></div>
+              </div>
+            </div>
+
+            <div class="behind">
+              <div class="bn">BEHIND THE GLASS</div>
+              Status: <code>Idle</code>. WebSocket connected. Policy engine loaded. Wallet balance hydrated from XRPL testnet. <b>Nothing is signing yet.</b>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ STOP 2 · S2 DELEGATE ============ -->
+      <div class="stop act">
+        <div class="pin">2</div>
+        <div class="card">
+          <div class="row">
+
+            <div class="phonecell">
+              <div class="phone">
+                <div class="notch"></div>
+                <div class="scrn">
+                  <div class="ph-head">
+                    <span class="ph-back">‹ Back</span>
+                    <span class="ph-title">New Task</span>
+                    <span class="pill idle">DRAFT</span>
+                  </div>
+                  <div class="ph-label">Task</div>
+                  <div class="ph-field t lg">Research lithium supply…</div>
+                  <div class="ph-label">Budget · RLUSD</div>
+                  <div class="ph-slider">
+                    <div class="fill" style="width:60%;"></div>
+                    <div class="knob" style="left:60%;"></div>
+                  </div>
+                  <div class="ph-row" style="margin-top:-2px;"><span class="ph-stat">$0</span><span class="ph-stat"><b style="color:var(--gold);">$50.00</b></span></div>
+                  <div class="ph-label">Services</div>
+                  <div class="ph-chips">
+                    <span class="ph-chip on">SearchAPI</span>
+                    <span class="ph-chip on">DataFeed</span>
+                    <span class="ph-chip">+ add</span>
+                  </div>
+                  <div class="ph-label">Policy preset</div>
+                  <div class="ph-field t">Standard ▾</div>
+                  <div class="pbtn go full" style="margin-top:auto;">Launch Agent</div>
+                  <div class="pbtn nav full ghost">Save as draft</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="stag"><span class="snum">STOP 2</span><span class="sname">Define + launch the task <span class="badge">S2 · DELEGATE</span></span></div>
+              <p class="what">The person writes the research question, sets the <em>total allowance</em>, picks which paid services the agent may touch, and chooses a policy preset (caps + approval threshold). <em>Then launches.</em></p>
+              <div class="actions">
+                <div class="action money">Budget slider<small>Total RLUSD the agent may draw for this task.</small><span class="goesto">→ <b>writes the allowance into the policy engine</b></span></div>
+                <div class="action nav">Choose services<small>Per-task allowlist — the agent may pay no one else.</small><span class="goesto">→ <b>stays on this screen</b></span></div>
+                <div class="action go">Launch Agent<small>Earmarks the allowance, starts the loop, opens the live channel.</small><span class="goesto">→ <b>S3 Live Run</b></span></div>
+                <div class="action nav">Save as draft<small>Persists the task without starting it.</small><span class="goesto">→ <b>S1 Dashboard</b></span></div>
+              </div>
+            </div>
+
+            <div class="behind">
+              <div class="bn">BEHIND THE GLASS</div>
+              Backend persists the task + allowlist + threshold to Supabase. <b>The policy engine is armed</b> with this task's rules. On Launch, Claude is spun up with tool definitions (paid endpoints + a <code>pay</code> capability). <b>The payment loop goes live.</b>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ STOP 3 · S3 LIVE RUN ============ -->
+      <div class="stop live">
+        <div class="pin">3</div>
+        <div class="card">
+          <div class="row">
+
+            <div class="phonecell">
+              <div class="phone">
+                <div class="notch"></div>
+                <div class="scrn live">
+                  <div class="ph-head">
+                    <span class="ph-title">Live Run</span>
+                    <span class="pill live"><span class="blink"></span>WORKING</span>
+                  </div>
+                  <div class="ring mini">
+                    <svg viewBox="0 0 100 100" aria-hidden="true">
+                      <circle cx="50" cy="50" r="38" stroke="#2A333F" stroke-width="7" fill="none"/>
+                      <circle cx="50" cy="50" r="38" stroke="#E8B23A" stroke-width="7" fill="none"
+                              stroke-dasharray="239" stroke-dashoffset="100"
+                              stroke-linecap="round" transform="rotate(-90 50 50)"/>
+                      <text x="50" y="48" text-anchor="middle" fill="#E8EDF4" font-size="13" font-family="Space Grotesk" font-weight="700">$32</text>
+                      <text x="50" y="62" text-anchor="middle" fill="#94A2B3" font-size="7" font-family="JetBrains Mono">LEFT</text>
+                    </svg>
+                  </div>
+                  <div class="ph-feed">
+                    <div class="think">→ planning sources…</div>
+                    <div class="pay">$ 0.02 → SearchAPI <span class="h">✓</span></div>
+                    <div class="think">→ reading 50 results</div>
+                    <div class="pay">$ 0.03 → DataFeed <span class="h">✓</span></div>
+                    <div class="think">→ cross-referencing</div>
+                  </div>
+                  <div class="ph-modal">
+                    <div class="mt">Approve $0.18?</div>
+                    <div class="ma">ModelAPI · over threshold</div>
+                  </div>
+                  <div class="pbtn-row">
+                    <div class="pbtn go">Approve</div>
+                    <div class="pbtn kill">Deny</div>
+                  </div>
+                  <div class="pbtn-row">
+                    <div class="pbtn nav">Pause</div>
+                    <div class="pbtn kill ghost">Stop &amp; Settle</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="stag"><span class="snum">STOP 3</span><span class="sname">Watch the agent work <span class="badge">S3 · LIVE RUN · SHOWPIECE</span></span></div>
+              <p class="what">Streaming feed of <em>reasoning steps</em> interleaved with <em>payment events</em> — "Paid 0.02 RLUSD → SearchAPI." Budget ring drains live. When a payment crosses the threshold, the Approve / Deny prompt appears. This is what makes the demo land.</p>
+
+              <div class="loopbox">
+                <div class="ln">THE PAYMENT LOOP · FIRES FOR EVERY PAID RESOURCE</div>
+                <div class="loopflow">
+                  <span class="lf">Need data</span><span class="arrow-i">→</span>
+                  <span class="lf">402</span><span class="arrow-i">→</span>
+                  <span class="lf gate">Policy gates</span><span class="arrow-i">→</span>
+                  <span class="lf ask">Ask human?</span><span class="arrow-i">→</span>
+                  <span class="lf pay">Sign on XRPL</span><span class="arrow-i">→</span>
+                  <span class="lf">Data returns</span><span class="arrow-i">→</span>
+                  <span class="lf log">Log + push live</span>
+                </div>
+              </div>
+
+              <div class="actions" style="margin-top:14px;">
+                <div class="action go">Approve<small>Signs + broadcasts that specific payment. The loop continues.</small><span class="goesto">→ <b>signs on XRPL · stays on S3</b></span></div>
+                <div class="action kill">Deny<small>Refuses it; the agent is told the resource is unavailable and re-plans.</small><span class="goesto">→ <b>no signature produced · stays on S3</b></span></div>
+                <div class="action nav">Pause / Resume<small>Soft-stops after the current step.</small><span class="goesto">→ <b>stays on S3</b></span></div>
+                <div class="action kill">Stop &amp; Settle<small>Ends the run, finalizes the deliverable.</small><span class="goesto">→ <b>S6 Result</b></span></div>
+                <div class="action nav">Tap a payment in the feed<small>Drill into a specific tx.</small><span class="goesto">→ <b>S4 Tx Detail</b></span></div>
+                <div class="action money">Open policy panel<small>Adjust caps / threshold mid-run.</small><span class="goesto">→ <b>S5 Budget &amp; Policy</b></span></div>
+              </div>
+            </div>
+
+            <div class="behind">
+              <div class="bn">BEHIND THE GLASS</div>
+              For each agent step, backend catches the <code>402</code>, runs the request through the <b>policy engine</b>, and <b>only then</b> asks xrpl.js to sign. Each settled tx is broadcast, captured (hash, ledger index), and pushed to the phone over WebSocket.
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ STOP 4 · S6 RESULT ============ -->
+      <div class="stop end">
+        <div class="pin">4</div>
+        <div class="card">
+          <div class="row">
+
+            <div class="phonecell">
+              <div class="phone">
+                <div class="notch"></div>
+                <div class="scrn">
+                  <div class="ph-head">
+                    <span class="ph-back">‹ Back</span>
+                    <span class="ph-title">Report</span>
+                    <span class="pill ok">DONE</span>
+                  </div>
+                  <div class="ph-label">Deliverable</div>
+                  <div class="ph-bars">
+                    <div></div><div></div><div></div><div></div><div></div>
+                  </div>
+                  <div class="ph-cost">
+                    <b>0.31 RLUSD</b>
+                    <small>across 9 paid calls</small>
+                  </div>
+                  <div class="ph-label">Breakdown</div>
+                  <div class="ph-tx"><span class="dot green"></span><span>SearchAPI · 5</span><span class="amt" style="margin-left:auto;">0.10</span></div>
+                  <div class="ph-tx"><span class="dot green"></span><span>DataFeed · 3</span><span class="amt" style="margin-left:auto;">0.18</span></div>
+                  <div class="ph-tx"><span class="dot green"></span><span>ModelAPI · 1</span><span class="amt" style="margin-left:auto;">0.03</span></div>
+                  <div class="pbtn nav full" style="margin-top:auto;">Export / Share</div>
+                  <div class="pbtn nav full ghost">Run similar task</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="stag"><span class="snum">STOP 4</span><span class="sname">Receive the deliverable <span class="badge">S6 · RESULT</span></span></div>
+              <p class="what">The agent's report plus a <em>cost breakdown</em> — "0.31 RLUSD across 9 paid calls." Every line item links to a real XRPL testnet transaction the person can open in the public explorer. <b style="color:var(--gold)">The loop is closed and provable.</b></p>
+              <div class="actions">
+                <div class="action nav">Export / Share<small>Exports the report.</small><span class="goesto">→ <b>OS share sheet</b></span></div>
+                <div class="action nav">Run similar task<small>Pre-fills Delegate with the same parameters.</small><span class="goesto">→ <b>S2 Delegate</b> (the loop closes)</span></div>
+                <div class="action nav">Tap any line in the breakdown<small>Drill into a specific tx.</small><span class="goesto">→ <b>S4 Tx Detail</b></span></div>
+              </div>
+            </div>
+
+            <div class="behind">
+              <div class="bn">BEHIND THE GLASS</div>
+              Report + cost ledger persisted. Wallet balance reflects what was actually spent. Nothing in the report is asserted without an on-chain receipt to back it.
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============== SIDEQUESTS ============== -->
+  <section id="sidequests">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Sidequests · the two branch screens + the panic controls</h2></div>
+    <p class="lead">S4 and S5 don't sit on the happy path — they're branches you open when you want to <em>inspect</em> a tx or <em>change the rules</em>. Both are accessible from S1 and S3.</p>
+
+    <!-- branch screen wireframes -->
+    <div class="sqscreens">
+
+      <!-- S4 wireframe -->
+      <div class="sqscreen">
+        <div class="pcell">
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="scrn">
+              <div class="ph-head">
+                <span class="ph-back">‹ Back</span>
+                <span class="ph-title">Transaction</span>
+                <span class="pill ok">VALIDATED</span>
+              </div>
+              <div class="ph-amount">0.02 RLUSD<small>SearchAPI · 50 results</small></div>
+              <div class="ph-kv"><span class="k">tx hash</span><span class="v hash">0x4a3f…d2e7</span></div>
+              <div class="ph-kv"><span class="k">ledger</span><span class="v">#84521234</span></div>
+              <div class="ph-kv"><span class="k">when</span><span class="v">12s ago</span></div>
+              <div class="ph-kv"><span class="k">to</span><span class="v">rSearch…42</span></div>
+              <div class="pbtn nav full" style="margin-top:auto;">View on Explorer ↗</div>
+              <div class="pbtn kill full ghost">Block this service</div>
+              <div class="pbtn nav full ghost">Copy hash</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="stag"><span class="sname">Tx Detail</span><span class="badge">S4</span></div>
+          <div class="open-from">Opens from: <b>S1</b> (tap recent tx) · <b>S3</b> (tap tx in feed) · <b>S6</b> (tap breakdown row)</div>
+          <p>Proves the payment is real. The <b>View on Explorer</b> button opens the actual XRPL testnet transaction in a browser — the moment of truth that this isn't a slideshow.</p>
+          <div class="actions">
+            <div class="action nav">View on Explorer<small>Opens the real testnet tx.</small><span class="goesto">→ <b>external browser</b></span></div>
+            <div class="action kill">Block this service<small>Adds the recipient to the denylist.</small><span class="goesto">→ <b>policy refuses future payments to it</b></span></div>
+            <div class="action nav">Copy hash<small>Copies the tx hash.</small></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- S5 wireframe -->
+      <div class="sqscreen">
+        <div class="pcell">
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="scrn">
+              <div class="ph-head">
+                <span class="ph-back">‹ Back</span>
+                <span class="ph-title">Budget &amp; Policy</span>
+              </div>
+              <div class="ph-label">Total allowance</div>
+              <div class="ph-field t" style="color:var(--gold); font-weight:600;">$50.00 RLUSD</div>
+              <div class="ph-label">Per-tx cap</div>
+              <div class="ph-slider"><div class="fill" style="width:25%;"></div><div class="knob" style="left:25%;"></div></div>
+              <div class="ph-row"><span class="ph-stat">$0</span><span class="ph-stat"><b>$0.20</b></span></div>
+              <div class="ph-label">Daily cap</div>
+              <div class="ph-slider"><div class="fill" style="width:50%;"></div><div class="knob" style="left:50%;"></div></div>
+              <div class="ph-row"><span class="ph-stat">$0</span><span class="ph-stat"><b>$5</b></span></div>
+              <div class="ph-label">Approve over</div>
+              <div class="ph-field t">$0.10</div>
+              <div class="ph-label">Allowlist</div>
+              <div class="ph-chips">
+                <span class="ph-chip on">SearchAPI</span>
+                <span class="ph-chip on">DataFeed</span>
+              </div>
+              <div class="pbtn-row" style="margin-top:auto;">
+                <div class="pbtn go">Save</div>
+                <div class="pbtn money">Top up</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="stag"><span class="sname">Budget &amp; Policy</span><span class="badge">S5</span></div>
+          <div class="open-from">Opens from: <b>S1</b> (tap budget ring) · <b>S3</b> (adjust mid-run)</div>
+          <p>The <em>policy engine's settings</em>. Changing anything here writes new rules the engine consults from the next payment request on. Editable mid-run.</p>
+          <div class="actions">
+            <div class="action go">Save policy<small>Writes the rules the engine consults on every payment.</small><span class="goesto">→ <b>back to previous screen · takes effect immediately</b></span></div>
+            <div class="action money">Top up allowance<small>Funds the agent wallet from the testnet faucet.</small><span class="goesto">→ <b>balance updates on XRPL</b></span></div>
+            <div class="action money">Reset budget<small>Zeroes the spend counter for a new run.</small></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- panic controls (no separate screens — they live on top of S3/S1) -->
+    <div class="sidequests">
+      <div class="sqh">FROM S3 · LIVE RUN — IN-PLACE CONTROLS</div>
+      <div class="sqt">These don't navigate — they act on the run you're already watching.</div>
+      <div class="sqgrid">
+        <div class="sq go">
+          <div class="sqn">APPROVE</div>
+          <p>A payment crossed the threshold. <b>Approve</b> it; the agent signs that one tx and the loop continues.</p>
+        </div>
+        <div class="sq kill">
+          <div class="sqn">DENY</div>
+          <p><b>Deny</b> the payment. The agent is told the resource is unavailable and <em>re-plans</em>. No signature was ever produced.</p>
+        </div>
+        <div class="sq nav">
+          <div class="sqn">PAUSE / RESUME</div>
+          <p>Soft-stop after the current step. Resumable. Use it when you want to read the feed before more money moves.</p>
+        </div>
+        <div class="sq kill">
+          <div class="sqn">KILL SWITCH</div>
+          <p>Available on <b>S1</b> and <b>S3</b>. Sets the agent to <em>halted</em>. The policy engine refuses every signature from that moment.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== MOMENTS ============== -->
+  <section id="moments">
+    <div class="sec-head"><span class="sec-num">04</span><h2>The three moments that sell the demo</h2></div>
+    <p class="lead">The journey has many screens, but it lands or doesn't on these three moments.</p>
+    <div class="moments">
+      <div class="moment">
+        <div class="mn">MOMENT 1 · S4</div>
+        <h4>The first tx hash on the explorer</h4>
+        <p>A real, opened-in-a-browser XRPL testnet transaction tied to a payment the agent decided to make. Proof that this isn't a slideshow.</p>
+      </div>
+      <div class="moment green">
+        <div class="mn">MOMENT 2 · S3</div>
+        <h4>The Approve / Deny prompt</h4>
+        <p>The phone vibrates mid-run because a payment crossed the threshold. The person taps once and the loop continues — or doesn't. Autonomy plus control, in one tap.</p>
+      </div>
+      <div class="moment red">
+        <div class="mn">MOMENT 3 · S1 / S3</div>
+        <h4>The kill switch lands</h4>
+        <p>One tap halts every future signature. Not a soft pause — the policy engine refuses to sign. This is the floor that makes trusting the rest of the loop possible.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>LEASH · user journey</span>
+    <span>companion to <a href="leash_app_spec.html" style="color:var(--faint); text-decoration:underline;">leash_app_spec.html</a> · testnet · working name</span>
+  </footer>
+
+</div>
+</body>
+</html>
