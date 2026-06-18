@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leash — Telegram bot demo · setup + chat walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116; --panel:#151B23; --panel-2:#1B232E; --raised:#212B38;
+    --line:#2A333F; --line-soft:#222B36;
+    --text:#E8EDF4; --muted:#94A2B3; --faint:#647183;
+    --gold:#E8B23A; --gold-dim:#3a2f16;
+    --green:#41C46B; --green-dim:#16301f;
+    --red:#EB5757; --red-dim:#341a1c;
+    --blue:#5C9CFF; --blue-dim:#16243f;
+    --tg-bg:#17212B; --tg-in:#212D3B; --tg-out:#2B5278;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--ink); color:var(--text);
+    font-family:'Inter',system-ui,sans-serif; line-height:1.6;
+    font-size:15.5px; letter-spacing:.005em;
+    background-image:radial-gradient(900px 500px at 78% -8%, rgba(92,156,255,.07), transparent 60%),
+                     radial-gradient(700px 400px at 8% 0%, rgba(232,178,58,.06), transparent 55%);}
+  .wrap{max-width:1140px; margin:0 auto; padding:0 22px 90px;}
+
+  nav.bar{position:sticky; top:0; z-index:20; backdrop-filter:blur(10px);
+    background:rgba(14,17,22,.82); border-bottom:1px solid var(--line-soft);}
+  nav.bar .inner{max-width:1140px; margin:0 auto; padding:11px 22px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  nav.bar .mark{font-family:'Space Grotesk'; font-weight:700; letter-spacing:.04em; font-size:15px;}
+  nav.bar .mark .dot{color:var(--gold);}
+  nav.bar a{color:var(--muted); text-decoration:none; font-size:12.5px;
+    font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:.08em;}
+  nav.bar a:hover{color:var(--text);}
+  nav.bar .links{display:flex; gap:16px; flex-wrap:wrap; margin-left:auto;}
+
+  header.hero{padding:54px 0 30px; border-bottom:1px solid var(--line-soft);}
+  .eyebrow{font-family:'JetBrains Mono'; font-size:12px; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--gold); margin:0 0 18px;}
+  h1{font-family:'Space Grotesk'; font-weight:700; font-size:clamp(34px,6vw,54px);
+    line-height:1.04; margin:0 0 8px; letter-spacing:-.02em;}
+  h1 .leash{color:var(--gold);}
+  .sub{font-size:15px; color:var(--muted); font-family:'JetBrains Mono'; margin:0 0 26px;}
+  .thesis{max-width:760px; font-size:17px; color:var(--text); border-left:2px solid var(--gold);
+    padding:4px 0 4px 18px; margin:0 0 8px;}
+  .thesis b{color:var(--gold); font-weight:600;}
+
+  section{padding:54px 0 6px; scroll-margin-top:64px;}
+  .sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:8px;}
+  .sec-num{font-family:'JetBrains Mono'; color:var(--faint); font-size:13px; letter-spacing:.1em;}
+  h2{font-family:'Space Grotesk'; font-weight:600; font-size:26px; margin:0; letter-spacing:-.01em;}
+  .lead{color:var(--muted); max-width:780px; margin:6px 0 26px;}
+  code{font-family:'JetBrains Mono'; font-size:.9em; color:var(--gold);
+    background:rgba(232,178,58,.08); border:1px solid var(--gold-dim);
+    border-radius:4px; padding:1px 6px;}
+  pre{background:var(--ink); border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; font-family:'JetBrains Mono'; font-size:13px;
+    color:var(--text); line-height:1.5; margin:0 0 18px;}
+  pre code{background:none; border:none; padding:0; color:var(--gold);}
+
+  /* setup steps */
+  .steps{counter-reset:step;}
+  .step{position:relative; display:grid; grid-template-columns:48px 1fr; gap:14px;
+    padding:16px 18px; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; margin-bottom:14px;}
+  .step::before{counter-increment:step; content:counter(step);
+    grid-column:1; width:32px; height:32px; border-radius:50%;
+    background:var(--panel-2); border:1px solid var(--gold-dim);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono'; font-weight:700; color:var(--gold); font-size:14px;
+    margin-top:2px;}
+  .step h3{font-family:'Space Grotesk'; font-weight:600; font-size:15px;
+    margin:0 0 6px; letter-spacing:-.005em;}
+  .step p{color:var(--muted); font-size:13.5px; margin:0 0 8px;}
+  .step .botfather{display:inline-flex; align-items:center; gap:6px;
+    padding:2px 8px; background:var(--blue-dim); color:var(--blue);
+    border-radius:6px; font-family:'JetBrains Mono'; font-size:12px;}
+
+  /* commands legend */
+  .cmds{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin:12px 0 6px;}
+  .cmd{background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px;}
+  .cmd .nm{font-family:'JetBrains Mono'; font-size:13px; color:var(--gold);
+    background:var(--gold-dim); display:inline-block; padding:2px 7px; border-radius:5px;
+    margin-bottom:6px;}
+  .cmd p{font-size:13px; color:var(--muted); margin:0; line-height:1.45;}
+  .cmd p b{color:var(--text); font-weight:600;}
+
+  /* Telegram-style chat layout */
+  .chatwrap{display:grid; grid-template-columns:300px 1fr; gap:24px; align-items:start;}
+  @media (max-width:880px){ .chatwrap{grid-template-columns:1fr;} }
+
+  .chatside{background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:18px 20px;}
+  .chatside h4{font-family:'Space Grotesk'; font-size:15px; margin:0 0 10px;}
+  .chatside p{font-size:13px; color:var(--muted); margin:0 0 10px;}
+  .chatside .veri{background:var(--green-dim); color:var(--green); border:1px solid var(--green-dim);
+    padding:10px 12px; border-radius:8px; font-size:13px;}
+  .chatside .veri b{color:var(--text); font-weight:600;}
+  .chatside .veri code{color:var(--gold);}
+  .chatside ul{margin:0; padding-left:18px; color:var(--muted); font-size:13px;}
+  .chatside ul li{margin-bottom:6px;}
+
+  .phone{
+    background:#0a0d12; border:1px solid var(--line); border-radius:26px;
+    padding:14px 8px 12px; max-width:380px; margin:0 auto;
+    box-shadow:0 8px 36px rgba(0,0,0,.55);
+  }
+  .phone .notch{width:54px; height:5px; background:var(--line); border-radius:3px; margin:0 auto 10px;}
+  .tg{background:var(--tg-bg); border-radius:18px; padding:0; overflow:hidden;
+    min-height:560px; display:flex; flex-direction:column;}
+  .tg .tghead{padding:12px 16px; border-bottom:1px solid rgba(255,255,255,.05);
+    display:flex; align-items:center; gap:10px; background:#1A2A3A;}
+  .tg .tghead .av{width:36px; height:36px; border-radius:50%;
+    background:linear-gradient(135deg, var(--gold), var(--blue));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk'; font-weight:700; font-size:14px; color:#0a0d12;}
+  .tg .tghead .who{font-family:'Inter'; font-weight:600; font-size:13.5px; line-height:1.1;}
+  .tg .tghead .who small{display:block; font-weight:400; color:var(--muted); font-size:11px; margin-top:2px;}
+  .tg .body{padding:12px 10px; display:flex; flex-direction:column; gap:6px; flex:1;
+    background:linear-gradient(180deg, var(--tg-bg) 0%, #182230 100%);}
+  .msg{max-width:88%; padding:8px 11px; border-radius:14px; font-size:13px; line-height:1.45;
+    font-family:'Inter'; word-wrap:break-word;}
+  .msg.bot{background:var(--tg-in); align-self:flex-start; border-bottom-left-radius:4px;}
+  .msg.me{background:var(--tg-out); align-self:flex-end; border-bottom-right-radius:4px; color:#E8EDF4;}
+  .msg b{color:var(--text); font-weight:600;}
+  .msg.bot b{color:#E8EDF4;}
+  .msg code, .msg .mono{font-family:'JetBrains Mono'; font-size:11.5px; color:#A8D8FF; background:rgba(0,0,0,.2); padding:1px 5px; border-radius:3px;}
+  .msg em{color:#A8D8FF; font-style:italic;}
+  .msg .em{display:inline-block; margin-right:4px;}
+  .msg .button{display:block; margin-top:8px; padding:8px 12px; background:rgba(92,156,255,.15);
+    color:#5C9CFF; border-radius:6px; text-align:center; font-size:12.5px; font-weight:600;
+    text-decoration:none;}
+  .msg .ts{display:block; text-align:right; color:var(--muted); font-size:10px; margin-top:3px;}
+  .msg .small{font-size:11.5px; color:var(--muted); display:block; margin-top:4px;}
+  .msg.policy{background:rgba(65,196,107,.08); border:1px solid var(--green-dim); border-bottom-left-radius:4px;}
+  .msg.warn{background:rgba(232,178,58,.08); border:1px solid var(--gold-dim); border-bottom-left-radius:4px;}
+  .msg.err{background:var(--red-dim); border:1px solid var(--red-dim); color:var(--red); border-bottom-left-radius:4px;}
+
+  /* milestone badge */
+  .mstone{font-family:'JetBrains Mono'; font-size:10px; padding:2px 6px;
+    border-radius:5px; letter-spacing:.08em; font-weight:600;
+    vertical-align:middle; display:inline-block;}
+  .mstone.m2{background:var(--blue-dim); color:var(--blue);}
+  .mstone.m3{background:var(--green-dim); color:var(--green);}
+
+  /* notes */
+  .note{background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--gold);
+    border-radius:10px; padding:15px 17px; margin:14px 0;}
+  .note .nt{font-family:'JetBrains Mono'; font-size:12px; color:var(--gold); letter-spacing:.06em; margin-bottom:5px;}
+  .note p{font-size:13.5px; color:var(--muted); margin:0; line-height:1.5;}
+  .note.red{border-left-color:var(--red);}
+  .note.red .nt{color:var(--red);}
+
+  footer{margin-top:48px; padding-top:22px; border-top:1px solid var(--line-soft);
+    font-family:'JetBrains Mono'; font-size:12px; color:var(--faint);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+  footer a{color:var(--faint); text-decoration:underline;}
+</style>
+</head>
+<body>
+
+<nav class="bar">
+  <div class="inner">
+    <span class="mark">LEASH<span class="dot">.</span> <span style="color:var(--muted); font-weight:500;">/ telegram bot demo</span></span>
+    <div class="links">
+      <a href="#setup">Setup</a>
+      <a href="#chat">Chat walkthrough</a>
+      <a href="#commands">Commands</a>
+      <a href="leash_user_journey.html">User journey ↗</a>
+      <a href="leash_app_spec.html">Full spec ↗</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">M2 · the bot is the v1 frontend</p>
+    <h1><span class="leash">Leash</span> — the bot demo</h1>
+    <p class="sub">Setup + a styled walkthrough of the full chat conversation, end to end.</p>
+    <p class="thesis">Leash v1 ships as a <b>Telegram bot</b>, not a mobile app — faster to ship, native to the crypto-AI audience, and the control-tower UX is fundamentally conversational anyway. The backend is the same loop M1 already proved: probe → policy → sign on testnet → verify on ledger → unlock.</p>
+  </header>
+
+  <!-- ============= SETUP ============= -->
+  <section id="setup">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Setup · 4 steps</h2></div>
+    <p class="lead">Local-only first run. The bot uses polling, so no public webhook or hosting is required — it talks to Telegram from your laptop.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div>
+          <h3>Get a bot token from BotFather</h3>
+          <p>Open Telegram, message <span class="botfather">@BotFather</span>, run <code>/newbot</code>, pick a name + handle. BotFather will reply with a token like <code>1234567890:ABCdefGhI…</code>. <b>Save it.</b></p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div>
+          <h3>Put the token in <code>.env</code></h3>
+          <p>From a fresh clone:</p>
+<pre><code>cp .env.example .env
+# edit .env, add the line:
+# TELEGRAM_BOT_TOKEN=1234567890:ABCdefGhI…
+</code></pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div>
+          <h3>Install + run the bot</h3>
+<pre><code>npm install
+npm run bot</code></pre>
+          <p>The bot boots, auto-funds a fresh merchant + agent wallet from the testnet faucet (first run only — save the printed seeds back into <code>.env</code> for re-runs), and starts polling Telegram.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div>
+          <h3>Open Telegram, find your bot, send <code>/start</code></h3>
+          <p>The bot's username is whatever you set with BotFather. Send <code>/start</code> and you'll see the welcome message. Then send <code>/task lithium supply chain risks 2026</code> to fire your first real testnet payment.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="note red">
+      <div class="nt">SECURITY · KEY DISCIPLINE</div>
+      <p>Never commit your <code>.env</code> — it's gitignored for a reason. Wallet seeds and bot tokens belong in env vars. The auto-funded seeds printed on first run are testnet only (no real-money risk), but you should still save them privately and not share them.</p>
+    </div>
+  </section>
+
+  <!-- ============= CHAT WALKTHROUGH ============= -->
+  <section id="chat">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Chat walkthrough · what you'll see</h2></div>
+    <p class="lead">The bot sends one message per agent event. You watch the full loop happen in chat, from <em>probing</em> to <em>tx settled</em>, with a button that opens the real explorer page for that transaction.</p>
+
+    <div class="chatwrap">
+
+      <div class="chatside">
+        <h4>What's actually happening</h4>
+        <p>Each message on the right is one event from the same <em>agent loop</em> M1 already ran. The bot is a thin shell — it forwards events to chat and shoves your commands back into the agent.</p>
+
+        <div class="veri">
+          <b>Verify the proof.</b> Tap <b>View on Explorer</b> on the green message. You'll see a real XRPL testnet transaction with <code>tesSUCCESS</code>, the right amount (1000 drops = 0.001 XRP), the merchant wallet as Destination, and a UTF-8 memo matching the bot's <code>memo: leash-…</code> line.
+        </div>
+
+        <h4 style="margin-top:18px;">Notable</h4>
+        <ul>
+          <li><b>Policy runs before signing.</b> The "✓ policy: allow" line is the M1 guarantee made visible.</li>
+          <li><b>Inline explorer button.</b> One tap from chat into the real testnet — the demo's money shot.</li>
+          <li><b>No Approve/Deny yet.</b> M2 ships every payment under the threshold. <span class="mstone m3">M3</span> wires the inline-keyboard Approve/Deny prompt for over-threshold payments.</li>
+          <li><b>Deterministic agent.</b> The "results" are canned. Claude tool use lands at <span class="mstone m3">M3</span>.</li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="tg">
+            <div class="tghead">
+              <div class="av">🐕</div>
+              <div class="who">@LeashBot<small>bot · online</small></div>
+            </div>
+            <div class="body">
+
+              <div class="msg me">/start<span class="ts">10:42</span></div>
+
+              <div class="msg bot">
+                <b>🐕 Welcome to Leash.</b><br>
+                I'm a control-tower for an AI agent that pays per use on the XRP Ledger <em>testnet</em>. You give it a task and a budget; I run it through the policy engine and let you watch every cent move on-chain.<br><br>
+                <span class="small">
+                <b>Defaults (M2):</b><br>
+                • Allowance: <b>50.000 XRP</b><br>
+                • Per-tx cap: <b>0.200 XRP</b><br>
+                • Approve ≥: <b>0.100 XRP</b><br><br>
+                Try: <span class="mono">/task lithium supply chain risks 2026</span><br>
+                Commands: <span class="mono">/budget</span> <span class="mono">/halt</span> <span class="mono">/forget</span>
+                </span>
+                <span class="ts">10:42</span>
+              </div>
+
+              <div class="msg me">/task lithium supply chain risks 2026<span class="ts">10:43</span></div>
+
+              <div class="msg bot">🚀 <b>Starting agent run</b><br>Query: <em>lithium supply chain risks 2026</em><span class="ts">10:43</span></div>
+
+              <div class="msg bot">→ probing the merchant for a paid resource…<span class="ts">10:43</span></div>
+
+              <div class="msg bot">💰 <b>402 challenge</b><br>• 1000 drops (0.001000 XRP)<br>• → <span class="mono">rGdKsWjZf4ojBSmqU8AaqwYGjfRDgvgvsk</span><br>• memo: <span class="mono">leash-8fa54a8fc4eef76e</span><span class="ts">10:43</span></div>
+
+              <div class="msg bot policy">✓ <b>policy:</b> allow<span class="ts">10:43</span></div>
+
+              <div class="msg bot">👛 agent wallet: <span class="mono">r4gnY4HiN9xKz8MzfdzoDWNaTa2eqqCMXG</span><span class="ts">10:43</span></div>
+
+              <div class="msg bot">✍️ signing + broadcasting Payment on testnet…<span class="ts">10:43</span></div>
+
+              <div class="msg bot policy">
+                ✅ <b>TX SETTLED</b><br>
+                • ledger: 18297486<br>
+                • hash: <span class="mono">4B85617C1C393E…0912EBCDE38</span>
+                <a class="button" href="https://testnet.xrpl.org/transactions/4B85617C1C393E97A72A9BDD81D34F5C8B718397DAEEDD397A5FD0912EBCDE38">View on Explorer ↗</a>
+                <span class="ts">10:43</span>
+              </div>
+
+              <div class="msg bot">
+                📊 <b>Got 3 results for "lithium supply chain risks 2026"</b><br><br>
+                <span class="small">
+                1. Chilean brine output up 6% YoY but water-rights litigation is escalating.<br><br>
+                2. DRC cobalt-tied refinery capacity creates indirect lithium concentration risk.<br><br>
+                3. EU CRMA Tier-1 status pulls 2026 demand forward by ~14%.
+                </span>
+                <span class="ts">10:43</span>
+              </div>
+
+              <div class="msg bot">✓ Task complete.<span class="ts">10:43</span></div>
+
+              <div class="msg me">/budget<span class="ts">10:44</span></div>
+
+              <div class="msg bot">
+                📊 <b>Policy</b><br>
+                • Total budget: <b>50.000000 XRP</b><br>
+                • Per-tx cap: <b>0.200000 XRP</b><br>
+                • Daily cap: <b>5.000000 XRP</b><br>
+                • Approval ≥: <b>0.100000 XRP</b><br><br>
+                <b>Halted:</b> 🟢 no<br>
+                <b>Merchant payTo:</b> <span class="mono">rGdKsWjZ…gvsk</span>
+                <span class="ts">10:44</span>
+              </div>
+
+              <div class="msg me">/halt<span class="ts">10:45</span></div>
+
+              <div class="msg bot err">🛑 <b>Halted.</b> Policy engine will refuse every signature until you /halt again to resume.<span class="ts">10:45</span></div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============= COMMANDS ============= -->
+  <section id="commands">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Commands</h2></div>
+    <p class="lead">Five commands cover the entire M2 surface. M3 adds Approve/Deny inline buttons (they don't show as commands — they appear in-chat when a payment crosses the threshold).</p>
+
+    <div class="cmds">
+      <div class="cmd">
+        <span class="nm">/start</span>
+        <p>Welcome message + the current policy defaults. <b>Run this first.</b></p>
+      </div>
+      <div class="cmd">
+        <span class="nm">/task &lt;query&gt;</span>
+        <p>Kicks off the agent loop. Streams every event (probing, policy, signing, settled, results) as messages. <b>End state:</b> a real testnet tx with an explorer button.</p>
+      </div>
+      <div class="cmd">
+        <span class="nm">/budget</span>
+        <p>Shows the current policy values (total / per-tx / daily caps, approval threshold, halt state, merchant address).</p>
+      </div>
+      <div class="cmd">
+        <span class="nm">/halt</span>
+        <p><b>Kill switch</b> — toggle. When halted, the bot refuses to start new tasks. <span class="mstone m3">M3</span> escalates this to a hard policy-engine refusal during in-flight runs.</p>
+      </div>
+      <div class="cmd">
+        <span class="nm">/forget</span>
+        <p>Wipes your per-user session state. <span class="mstone m3">M3</span> extends this to also wipe your stored Anthropic API key (BYOK).</p>
+      </div>
+      <div class="cmd">
+        <span class="nm">/explorer &lt;hash&gt;</span>
+        <p>Returns the testnet explorer URL for any tx hash. Handy for re-opening a previous run's proof.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= WHAT'S MISSING ============= -->
+  <section id="missing">
+    <div class="sec-head"><span class="sec-num">04</span><h2>What this demo does NOT do yet</h2></div>
+    <p class="lead">Honest about the M2 scope so you can read the demo correctly. None of these are blockers; they're the M3 punch list.</p>
+
+    <div class="note">
+      <div class="nt">M3 PUNCH LIST</div>
+      <p>
+      ① <b>Claude reasoning</b> — agent is deterministic in M2. M3 wires the Anthropic API (BYOK) so the agent thinks before it pays. <span class="mstone m3">M3</span><br><br>
+      ② <b>Approve / Deny prompt</b> — every payment is below threshold in M2, so the prompt never fires. M3 emits an inline-keyboard message when a payment crosses the threshold; you tap to release or refuse the signature. <span class="mstone m3">M3</span><br><br>
+      ③ <b>Hard kill switch</b> — <code>/halt</code> currently blocks new <code>/task</code> calls but doesn't interrupt an in-flight run. M3 routes the halt flag through the policy engine, refusing every future signature mid-run. <span class="mstone m3">M3</span><br><br>
+      ④ <b>BYOK API key storage</b> — bot doesn't ask for an Anthropic key in M2 (no Claude calls yet). M3 adds onboarding for a scoped+capped key, encrypted at rest. <span class="mstone m3">M3</span>
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <span>LEASH · telegram bot demo</span>
+    <span>see also <a href="leash_user_journey.html">user journey</a> · <a href="leash_app_spec.html">full spec</a> · <a href="README.md">repo readme</a></span>
+  </footer>
+
+</div>
+</body>
+</html>

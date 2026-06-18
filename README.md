@@ -1,58 +1,73 @@
-# Leash — M1 thin slice
+# Leash — Agentic Payments on XRPL
 
-> Agentic payments on XRPL, with mobile oversight. **This branch is M1 only**: one real testnet payment, with a tx hash you can open in the public explorer.
->
-> The mobile app (RN + Expo) lands in M2. See [`CLAUDE.md`](./CLAUDE.md) for the full spec and [`leash_user_journey.html`](./leash_user_journey.html) for the screen flow.
+> Control-tower for AI agents that **pay per use** on XRPL testnet. You delegate a task + budget; the policy engine gates every payment; you watch each one settle live with a real explorer link. Built as the seed of a later product and the XRPL Grants application.
 
-## What M1 proves
-- Agent decides it needs a paid resource.
-- **Policy engine runs first**, against the real on-the-wire payment requirement, before any signature.
-- xrpl.js signs a Payment on testnet.
-- The merchant unlocks the data by verifying the tx on the ledger.
-- The transaction hash opens in https://testnet.xrpl.org.
+> 📄 Specs in this repo: [`CLAUDE.md`](./CLAUDE.md) (canonical) · [`leash_app_spec.html`](./leash_app_spec.html) (visual) · [`leash_user_journey.html`](./leash_user_journey.html) (wireframes + flow) · [`leash_telegram_demo.html`](./leash_telegram_demo.html) (bot setup + chat walkthrough)
 
-That's it. No mobile UI, no Claude reasoning, no WebSocket feed — those come in M2/M3.
+## Status
 
-## Why "direct XRPL" and not x402 wire?
+| Milestone | State | Proof |
+|---|---|---|
+| **M1** — direct-XRPL thin slice | ✅ DONE 2026-06-17 | [tx `4B85617C…BCDE38`](https://testnet.xrpl.org/transactions/4B85617C1C393E97A72A9BDD81D34F5C8B718397DAEEDD397A5FD0912EBCDE38) |
+| **M2** — Telegram bot frontend | ✅ SCAFFOLD READY | `npm run bot` |
+| **M3** — Claude (BYOK) + Approve/Deny + Kill Switch | ⏳ next | — |
+| **M4** — polish + demo video + open-source | ⏳ later | — |
 
-The spec calls for x402. The reality (Jun 2026): t54's XRPL x402 facilitator is hosted **mainnet only**, and our spec forbids mainnet. There is no off-the-shelf testnet facilitator we can run yet.
+## Run M1 (terminal demo)
 
-So M1 ships the same conceptual loop without the x402 wire: the agent gets a 402 JSON body with `{payTo, amountDrops, nonce}`, sends an XRPL Payment with the nonce in the Memo, then retries with `?tx=<hash>`. The merchant verifies on the ledger.
-
-When a hosted testnet facilitator exists (or we build one), M2 restores the `x402-xrpl` `requirePayment` middleware on the merchant and `x402Fetch` on the agent — about 15 lines added, 80 lines deleted. **The policy engine, wallet helpers, log, and forthcoming mobile UI all live above the wire format and won't change.**
-
-## Setup
+The original M1 — agent makes one real testnet payment, prints the explorer URL.
 
 ```bash
-# 1. install deps
 npm install
-
-# 2. copy the env template
-cp .env.example .env
-
-# 3. (first run only) leave XRPL_MERCHANT_SEED and XRPL_AGENT_SEED blank;
-#    the script auto-funds both wallets from the testnet faucet and prints
-#    the seeds. Save the printed values into .env for re-runs.
-```
-
-## Run
-
-```bash
+cp .env.example .env       # leave seeds blank on first run; they auto-fund
 npm run m1
 ```
 
-On success you'll see:
-
+End state:
 ```
-────────────────────────────────────────────────────────────────
 ✓ PAYMENT SETTLED ON XRPL TESTNET
   hash:    <64-hex>
   ledger:  <int>
   open:    https://testnet.xrpl.org/transactions/<hash>
-────────────────────────────────────────────────────────────────
 ```
 
-Open that URL — that's M1 done.
+## Run M2 (the Telegram bot)
+
+The same loop, exposed via chat.
+
+1. **Get a bot token** — open Telegram → message `@BotFather` → `/newbot` → save the token.
+2. **Set it in `.env`:** `TELEGRAM_BOT_TOKEN=1234567890:ABC…`
+3. **Run the bot:**
+   ```bash
+   npm run bot
+   ```
+4. **Open Telegram, find your bot, send `/start`.** Then `/task lithium supply chain risks 2026`.
+
+A styled walkthrough of the exact chat conversation is in [`leash_telegram_demo.html`](./leash_telegram_demo.html).
+
+### Commands
+
+| Command | What it does |
+|---|---|
+| `/start` | Welcome + current policy defaults |
+| `/task <query>` | Kicks off the agent loop; streams every event into the chat; ends with an inline "View on Explorer" button |
+| `/budget` | Shows policy (caps, threshold, halt state, merchant address) |
+| `/halt` | Kill switch — toggle. Blocks new `/task` calls when halted |
+| `/forget` | Wipes your per-user session state |
+| `/explorer <hash>` | Returns the testnet explorer URL for any tx |
+
+## The six policy gates (the differentiator)
+
+Every payment passes these, in order, **before any signature is produced**:
+
+1. Not halted (kill switch)
+2. Service allowed (allowlist) / not denylisted
+3. Per-tx cap
+4. Daily cap
+5. Total budget remaining
+6. Below the manual-approval threshold — else ask the human (M3+)
+
+Implementation: [`src/policy/engine.ts`](./src/policy/engine.ts). All payment paths route through `evaluate()`.
 
 ## Layout
 
@@ -69,35 +84,25 @@ src/
   server/
     merchant.ts          Express — issues 402 with a nonce, verifies tx on ledger
   agent/
-    m1.ts                deterministic agent: probe → policy → sign → retry → unlock
+    events.ts            AgentEvent union + default console sink
+    m1.ts                deterministic agent loop, takes an onEvent callback
+  bot/
+    telegram.ts          telegraf bot — same loop, chat-driven
   log/
     payments.ts          JSON log at data/payments.json
-  main.ts                bootstrap: start merchant, run agent once, print explorer URL
+  main.ts                bootstrap (terminal demo): start merchant, run agent once
 ```
 
-## The six gates (the differentiator)
+## Honest simplifications
 
-Every payment passes these, in order, **before any signature is produced**:
+- **Direct XRPL payment, not x402 wire.** t54's XRPL x402 facilitator is hosted mainnet-only as of Jun 2026; our spec is testnet-only. The merchant verifies the tx on the ledger directly. When a hosted testnet facilitator exists, the swap to `x402-xrpl` middleware is ~15 lines added, ~80 deleted. **The policy engine, wallet helpers, and bot all live above the wire format.**
+- **Deterministic agent in M2.** Claude tool use enters at M3 with BYOK.
+- **BYOK for AI cost in v1.** User pastes a scoped + capped Anthropic key (M3+). The funded-wallet model (Leash brokers XRP → Anthropic) is the right v2 answer but needs capital we don't have yet.
+- **Custodial wallet seed** held by the backend (encrypted at rest in production). Testnet only here.
 
-1. Not halted (kill switch)
-2. Service allowed (allowlist) / not denylisted
-3. Per-tx cap
-4. Daily cap
-5. Total budget remaining
-6. Below the manual-approval threshold — else ask the human (M3+)
+## Why a Telegram bot first?
 
-Implementation: [`src/policy/engine.ts`](./src/policy/engine.ts). All payment paths route through `evaluate()`.
-
-## Honest M1 simplifications
-- **Direct XRPL payment, not x402 wire.** See "Why" section above.
-- **Custodial seed.** Backend holds the agent's seed (in `.env` for the demo). Production would scope permissions and rotate.
-- **Deterministic agent.** Claude tool-use enters at M3. M1's job is to prove the payment loop end-to-end, not the reasoning.
-- **No mobile UI.** That's M2.
-- **Canned data behind the paywall.** We control both sides of the demo for uptime; swap in a real paid endpoint later.
-
-## Milestones
-
-- **M1 (this branch)** — one real testnet payment via direct XRPL + ledger verification.
-- **M2** — RN + Expo mobile shell (Dashboard, Delegate, Live Run) over WebSocket. Swap the merchant + agent to `x402-xrpl` middleware once a testnet facilitator is available.
-- **M3** — policy engine fires Approve/Deny prompts on the phone; kill switch wired.
-- **M4** — Result screen, cost breakdown, demo video, open-source.
+- Faster to ship (no app-store review, no auth, no UI build).
+- The audience that watches XRPL talks and joins agent groups already lives in Telegram.
+- Approve/Deny is fundamentally an inline button — the control-tower UX is conversational by nature.
+- Mobile (RN + Expo) and a web companion are deferred, not killed. Same backend, different shells.

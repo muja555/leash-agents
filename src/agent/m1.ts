@@ -9,6 +9,7 @@ import type { PaymentRequest, Policy } from "../policy/types.js";
 import { loadOrFundWallet } from "../xrpl/client.js";
 import { txExplorerUrl } from "../xrpl/explorer.js";
 import { sendXrpPayment } from "../xrpl/pay.js";
+import { noopSink, type EventSink } from "./events.js";
 
 const SERVICE = "leash:research";
 
@@ -36,19 +37,30 @@ function buildPolicy(): Policy {
   };
 }
 
-export async function runM1(args: {
+export interface RunM1Args {
   merchantPort: number;
   merchantPayTo: string;
-}): Promise<{ hash: string; ledgerIndex: number; explorer: string }> {
-  const url = `http://127.0.0.1:${args.merchantPort}/research?q=${encodeURIComponent(config.agent.query)}`;
+  query?: string;
+  /**
+   * Subscribes to the agent's progress events. Same loop serves the terminal
+   * demo (consoleSink) and the Telegram bot (a sink that posts chat messages).
+   */
+  onEvent?: EventSink;
+}
+
+export async function runM1(
+  args: RunM1Args,
+): Promise<{ hash: string; ledgerIndex: number; explorer: string }> {
+  const emit = args.onEvent ?? noopSink;
+  const query = args.query ?? config.agent.query;
+  const url = `http://127.0.0.1:${args.merchantPort}/research?q=${encodeURIComponent(query)}`;
   const policy = buildPolicy();
   let spend = freshSpendState();
 
+  await emit({ type: "started", query });
+
   // ----- 1. Probe the merchant to get the REAL payment requirement -----
-  //         The policy engine must evaluate the actual on-the-wire amount.
-  //         This is the spec's "before any signature is ever produced"
-  //         guarantee, made literal.
-  console.log(`[agent] probing ${url}`);
+  await emit({ type: "probing", url });
   const probe = await fetch(url, { method: "GET", headers: { accept: "application/json" } });
   if (probe.status !== 402) {
     throw new Error(`expected 402 from merchant, got ${probe.status}`);
@@ -68,18 +80,19 @@ export async function runM1(args: {
     service: req402.service,
     amountDrops,
     destination: req402.payTo,
-    reason: `agent needs paid resource for query: "${config.agent.query}"`,
+    reason: `agent needs paid resource for query: "${query}"`,
   };
-  console.log(
-    `[agent] 402 challenge: ${amountDrops} drops ${req402.asset} → ${req402.payTo} (memo: ${req402.memo})`,
-  );
+  await emit({
+    type: "challenge",
+    amountDrops,
+    asset: req402.asset,
+    destination: req402.payTo,
+    memo: req402.memo,
+  });
 
   // ----- 2. Policy engine — runs BEFORE any signature is produced -----
   const decision = evaluate(policy, spend, paymentRequest);
-  console.log(
-    `[policy] decision: ${decision.kind}` +
-      ("reason" in decision ? ` — ${decision.reason}` : ""),
-  );
+  await emit({ type: "policy_decision", decision });
   if (decision.kind === "deny") {
     throw new Error(`policy denied payment at gate ${decision.gate}: ${decision.reason}`);
   }
@@ -91,36 +104,47 @@ export async function runM1(args: {
 
   // ----- 3. Load (or auto-fund) the agent wallet -----
   const agentWallet = await loadOrFundWallet(config.xrpl.agentSeed, "agent");
-  console.log(`[agent] wallet: ${agentWallet.classicAddress}`);
+  await emit({ type: "wallet_loaded", address: agentWallet.classicAddress });
 
   // ----- 4. Sign + submit the Payment with the memo binding it to the 402 -----
-  console.log(`[agent] signing + broadcasting Payment…`);
+  await emit({ type: "signing", amountDrops, destination: req402.payTo });
   const payment = await sendXrpPayment({
     wallet: agentWallet,
     destination: req402.payTo,
     amountDrops: req402.amountDrops,
     memo: req402.memo,
   });
-  console.log(`[agent] tx settled: ${payment.hash} (ledger ${payment.ledgerIndex})`);
+  const explorer = txExplorerUrl(payment.hash);
+  await emit({
+    type: "settled",
+    hash: payment.hash,
+    ledgerIndex: payment.ledgerIndex,
+    explorer,
+  });
 
   // ----- 5. Retry the request with ?tx=<hash> — merchant verifies on ledger -----
   const retryUrl = `${url}&tx=${payment.hash}`;
-  console.log(`[agent] retrying with proof: ${retryUrl}`);
   const retry = await fetch(retryUrl, { method: "GET", headers: { accept: "application/json" } });
   if (!retry.ok) {
     const body = await retry.text();
     throw new Error(`merchant rejected proof: HTTP ${retry.status} — ${body}`);
   }
   const data = (await retry.json()) as { query: string; results: string[] };
-  console.log(`[agent] unlocked: ${data.results.length} results for "${data.query}"`);
+  await emit({ type: "unlocked", query: data.query, results: data.results });
 
   // ----- 6. Record the spend + log the payment -----
-  const explorer = txExplorerUrl(payment.hash);
   spend = recordSpend(spend, paymentRequest);
   await appendPayment({
     ts: new Date().toISOString(),
     service: paymentRequest.service,
     amountDrops: req402.amountDrops,
+    hash: payment.hash,
+    ledgerIndex: payment.ledgerIndex,
+    explorer,
+  });
+
+  await emit({
+    type: "complete",
     hash: payment.hash,
     ledgerIndex: payment.ledgerIndex,
     explorer,

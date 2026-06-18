@@ -60,6 +60,25 @@
   .legend span{display:flex; align-items:center; gap:7px;}
   .legend i{width:8px; height:8px; border-radius:2px; display:inline-block;}
 
+  /* milestone badges — show which interaction becomes real in which milestone */
+  .mstone{font-family:'JetBrains Mono'; font-size:9.5px; padding:2px 6px;
+    border-radius:5px; letter-spacing:.08em; font-weight:600;
+    vertical-align:middle; margin-left:7px; display:inline-block;}
+  .mstone.m1{background:var(--gold-dim); color:var(--gold);}
+  .mstone.m2{background:var(--blue-dim); color:var(--blue);}
+  .mstone.m3{background:var(--green-dim); color:var(--green);}
+  .mstone.m4{background:rgba(232,178,58,.18); color:var(--gold); border:1px solid var(--gold-dim);}
+
+  .mlegend{margin:18px 0 0; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:16px 18px;}
+  .mlegend .mt{font-family:'JetBrains Mono'; font-size:11px; color:var(--faint);
+    letter-spacing:.14em; margin-bottom:10px;}
+  .mlegend .mgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px;}
+  .mlegend .mitem{display:flex; align-items:flex-start; gap:10px;
+    font-size:12.5px; color:var(--muted); line-height:1.45;}
+  .mlegend .mitem b{color:var(--text); font-weight:600; display:block; font-family:'Space Grotesk'; font-size:13px;}
+  .mlegend .mitem .mstone{margin-left:0; margin-top:2px;}
+
   /* goal banner */
   .goal{margin-top:26px; background:linear-gradient(160deg,var(--panel-2),var(--panel));
     border:1px solid var(--line); border-radius:var(--radius); padding:20px 24px;
@@ -365,6 +384,16 @@
       <span><i style="background:var(--blue)"></i> Navigate</span>
     </div>
 
+    <div class="mlegend">
+      <div class="mt">MILESTONE BADGES — WHEN EACH INTERACTION BECOMES REAL</div>
+      <div class="mgrid">
+        <div class="mitem"><span class="mstone m1">M1</span><div><b>Thin slice (done)</b>One real testnet payment, terminal only — no UI.</div></div>
+        <div class="mitem"><span class="mstone m2">M2</span><div><b>Mobile shell</b>Screens render, navigation works, live feed streams. Agent is hardcoded.</div></div>
+        <div class="mitem"><span class="mstone m3">M3</span><div><b>Human in the loop</b>Claude reasoning + Approve/Deny prompts + the Kill Switch actually halts.</div></div>
+        <div class="mitem"><span class="mstone m4">M4</span><div><b>Polish</b>Final Report layout, animations, Export/Share, demo video.</div></div>
+      </div>
+    </div>
+
     <div class="goal" id="goal">
       <div>
         <div class="gn">THE END-TO-END GOAL</div>
@@ -529,10 +558,10 @@
               <div class="stag"><span class="snum">STOP 1</span><span class="sname">Open the app <span class="badge">S1 · DASHBOARD</span></span></div>
               <p class="what">Agent at rest. The person sees the <em>budget ring</em>, balance, today's spend, and recent runs. Reassuring before they hand over any control.</p>
               <div class="actions">
-                <div class="action nav">+ New Task<small>Opens the Delegate screen to start a task.</small><span class="goesto">→ <b>S2 Delegate</b></span></div>
-                <div class="action nav">Tap budget ring<small>Jump to policy editing.</small><span class="goesto">→ <b>S5 Budget &amp; Policy</b></span></div>
-                <div class="action nav">Tap a recent tx<small>Inspect a past payment.</small><span class="goesto">→ <b>S4 Tx Detail</b></span></div>
-                <div class="action kill">Kill Switch<small>Always one tap away — even with no run in flight.</small><span class="goesto">→ <b>policy refuses every future signature</b></span></div>
+                <div class="action nav">+ New Task <span class="mstone m2">M2</span><small>Opens the Delegate screen to start a task.</small><span class="goesto">→ <b>S2 Delegate</b></span></div>
+                <div class="action nav">Tap budget ring <span class="mstone m2">M2</span><small>Jump to policy editing.</small><span class="goesto">→ <b>S5 Budget &amp; Policy</b></span></div>
+                <div class="action nav">Tap a recent tx <span class="mstone m2">M2</span><small>Inspect a past payment.</small><span class="goesto">→ <b>S4 Tx Detail</b></span></div>
+                <div class="action kill">Kill Switch <span class="mstone m3">M3</span><small>Always one tap away — even with no run in flight. In M2 the button exists; in M3 the policy engine actually refuses signatures.</small><span class="goesto">→ <b>policy refuses every future signature</b></span></div>
               </div>
             </div>
 
@@ -586,10 +615,10 @@
               <div class="stag"><span class="snum">STOP 2</span><span class="sname">Define + launch the task <span class="badge">S2 · DELEGATE</span></span></div>
               <p class="what">The person writes the research question, sets the <em>total allowance</em>, picks which paid services the agent may touch, and chooses a policy preset (caps + approval threshold). <em>Then launches.</em></p>
               <div class="actions">
-                <div class="action money">Budget slider<small>Total RLUSD the agent may draw for this task.</small><span class="goesto">→ <b>writes the allowance into the policy engine</b></span></div>
-                <div class="action nav">Choose services<small>Per-task allowlist — the agent may pay no one else.</small><span class="goesto">→ <b>stays on this screen</b></span></div>
-                <div class="action go">Launch Agent<small>Earmarks the allowance, starts the loop, opens the live channel.</small><span class="goesto">→ <b>S3 Live Run</b></span></div>
-                <div class="action nav">Save as draft<small>Persists the task without starting it.</small><span class="goesto">→ <b>S1 Dashboard</b></span></div>
+                <div class="action money">Budget slider <span class="mstone m2">M2</span><small>Total RLUSD the agent may draw for this task.</small><span class="goesto">→ <b>writes the allowance into the policy engine</b></span></div>
+                <div class="action nav">Choose services <span class="mstone m2">M2</span><small>Per-task allowlist — the agent may pay no one else.</small><span class="goesto">→ <b>stays on this screen</b></span></div>
+                <div class="action go">Launch Agent <span class="mstone m2">M2</span><small>Earmarks the allowance, starts the loop, opens the live channel.</small><span class="goesto">→ <b>S3 Live Run</b></span></div>
+                <div class="action nav">Save as draft <span class="mstone m2">M2</span><small>Persists the task without starting it.</small><span class="goesto">→ <b>S1 Dashboard</b></span></div>
               </div>
             </div>
 
@@ -667,12 +696,12 @@
               </div>
 
               <div class="actions" style="margin-top:14px;">
-                <div class="action go">Approve<small>Signs + broadcasts that specific payment. The loop continues.</small><span class="goesto">→ <b>signs on XRPL · stays on S3</b></span></div>
-                <div class="action kill">Deny<small>Refuses it; the agent is told the resource is unavailable and re-plans.</small><span class="goesto">→ <b>no signature produced · stays on S3</b></span></div>
-                <div class="action nav">Pause / Resume<small>Soft-stops after the current step.</small><span class="goesto">→ <b>stays on S3</b></span></div>
-                <div class="action kill">Stop &amp; Settle<small>Ends the run, finalizes the deliverable.</small><span class="goesto">→ <b>S6 Result</b></span></div>
-                <div class="action nav">Tap a payment in the feed<small>Drill into a specific tx.</small><span class="goesto">→ <b>S4 Tx Detail</b></span></div>
-                <div class="action money">Open policy panel<small>Adjust caps / threshold mid-run.</small><span class="goesto">→ <b>S5 Budget &amp; Policy</b></span></div>
+                <div class="action go">Approve <span class="mstone m3">M3</span><small>Signs + broadcasts that specific payment. The loop continues. Requires the threshold prompt — only fires in M3.</small><span class="goesto">→ <b>signs on XRPL · stays on S3</b></span></div>
+                <div class="action kill">Deny <span class="mstone m3">M3</span><small>Refuses it; the agent is told the resource is unavailable and re-plans.</small><span class="goesto">→ <b>no signature produced · stays on S3</b></span></div>
+                <div class="action nav">Pause / Resume <span class="mstone m2">M2</span><small>Soft-stops after the current step.</small><span class="goesto">→ <b>stays on S3</b></span></div>
+                <div class="action kill">Stop &amp; Settle <span class="mstone m2">M2</span><small>Ends the run, finalizes the deliverable.</small><span class="goesto">→ <b>S6 Result</b></span></div>
+                <div class="action nav">Tap a payment in the feed <span class="mstone m2">M2</span><small>Drill into a specific tx.</small><span class="goesto">→ <b>S4 Tx Detail</b></span></div>
+                <div class="action money">Open policy panel <span class="mstone m2">M2</span><small>Adjust caps / threshold mid-run.</small><span class="goesto">→ <b>S5 Budget &amp; Policy</b></span></div>
               </div>
             </div>
 
@@ -722,9 +751,9 @@
               <div class="stag"><span class="snum">STOP 4</span><span class="sname">Receive the deliverable <span class="badge">S6 · RESULT</span></span></div>
               <p class="what">The agent's report plus a <em>cost breakdown</em> — "0.31 RLUSD across 9 paid calls." Every line item links to a real XRPL testnet transaction the person can open in the public explorer. <b style="color:var(--gold)">The loop is closed and provable.</b></p>
               <div class="actions">
-                <div class="action nav">Export / Share<small>Exports the report.</small><span class="goesto">→ <b>OS share sheet</b></span></div>
-                <div class="action nav">Run similar task<small>Pre-fills Delegate with the same parameters.</small><span class="goesto">→ <b>S2 Delegate</b> (the loop closes)</span></div>
-                <div class="action nav">Tap any line in the breakdown<small>Drill into a specific tx.</small><span class="goesto">→ <b>S4 Tx Detail</b></span></div>
+                <div class="action nav">Export / Share <span class="mstone m4">M4</span><small>Exports the report. Polish-tier feature — proper layout + share sheet.</small><span class="goesto">→ <b>OS share sheet</b></span></div>
+                <div class="action nav">Run similar task <span class="mstone m2">M2</span><small>Pre-fills Delegate with the same parameters.</small><span class="goesto">→ <b>S2 Delegate</b> (the loop closes)</span></div>
+                <div class="action nav">Tap any line in the breakdown <span class="mstone m2">M2</span><small>Drill into a specific tx.</small><span class="goesto">→ <b>S4 Tx Detail</b></span></div>
               </div>
             </div>
 
@@ -775,9 +804,9 @@
           <div class="open-from">Opens from: <b>S1</b> (tap recent tx) · <b>S3</b> (tap tx in feed) · <b>S6</b> (tap breakdown row)</div>
           <p>Proves the payment is real. The <b>View on Explorer</b> button opens the actual XRPL testnet transaction in a browser — the moment of truth that this isn't a slideshow.</p>
           <div class="actions">
-            <div class="action nav">View on Explorer<small>Opens the real testnet tx.</small><span class="goesto">→ <b>external browser</b></span></div>
-            <div class="action kill">Block this service<small>Adds the recipient to the denylist.</small><span class="goesto">→ <b>policy refuses future payments to it</b></span></div>
-            <div class="action nav">Copy hash<small>Copies the tx hash.</small></div>
+            <div class="action nav">View on Explorer <span class="mstone m2">M2</span><small>Opens the real testnet tx — the proof artifact already exists from M1.</small><span class="goesto">→ <b>external browser</b></span></div>
+            <div class="action kill">Block this service <span class="mstone m3">M3</span><small>Adds the recipient to the denylist. Requires the policy engine's enforcement loop to be live.</small><span class="goesto">→ <b>policy refuses future payments to it</b></span></div>
+            <div class="action nav">Copy hash <span class="mstone m2">M2</span><small>Copies the tx hash.</small></div>
           </div>
         </div>
       </div>
@@ -819,9 +848,9 @@
           <div class="open-from">Opens from: <b>S1</b> (tap budget ring) · <b>S3</b> (adjust mid-run)</div>
           <p>The <em>policy engine's settings</em>. Changing anything here writes new rules the engine consults from the next payment request on. Editable mid-run.</p>
           <div class="actions">
-            <div class="action go">Save policy<small>Writes the rules the engine consults on every payment.</small><span class="goesto">→ <b>back to previous screen · takes effect immediately</b></span></div>
-            <div class="action money">Top up allowance<small>Funds the agent wallet from the testnet faucet.</small><span class="goesto">→ <b>balance updates on XRPL</b></span></div>
-            <div class="action money">Reset budget<small>Zeroes the spend counter for a new run.</small></div>
+            <div class="action go">Save policy <span class="mstone m2">M2</span><small>Writes the rules the engine consults on every payment.</small><span class="goesto">→ <b>back to previous screen · takes effect immediately</b></span></div>
+            <div class="action money">Top up allowance <span class="mstone m2">M2</span><small>Funds the agent wallet from the testnet faucet.</small><span class="goesto">→ <b>balance updates on XRPL</b></span></div>
+            <div class="action money">Reset budget <span class="mstone m2">M2</span><small>Zeroes the spend counter for a new run.</small></div>
           </div>
         </div>
       </div>
@@ -834,20 +863,20 @@
       <div class="sqt">These don't navigate — they act on the run you're already watching.</div>
       <div class="sqgrid">
         <div class="sq go">
-          <div class="sqn">APPROVE</div>
+          <div class="sqn">APPROVE <span class="mstone m3">M3</span></div>
           <p>A payment crossed the threshold. <b>Approve</b> it; the agent signs that one tx and the loop continues.</p>
         </div>
         <div class="sq kill">
-          <div class="sqn">DENY</div>
+          <div class="sqn">DENY <span class="mstone m3">M3</span></div>
           <p><b>Deny</b> the payment. The agent is told the resource is unavailable and <em>re-plans</em>. No signature was ever produced.</p>
         </div>
         <div class="sq nav">
-          <div class="sqn">PAUSE / RESUME</div>
+          <div class="sqn">PAUSE / RESUME <span class="mstone m2">M2</span></div>
           <p>Soft-stop after the current step. Resumable. Use it when you want to read the feed before more money moves.</p>
         </div>
         <div class="sq kill">
-          <div class="sqn">KILL SWITCH</div>
-          <p>Available on <b>S1</b> and <b>S3</b>. Sets the agent to <em>halted</em>. The policy engine refuses every signature from that moment.</p>
+          <div class="sqn">KILL SWITCH <span class="mstone m3">M3</span></div>
+          <p>Available on <b>S1</b> and <b>S3</b>. Sets the agent to <em>halted</em>. The policy engine refuses every signature from that moment. (Button exists from M2; <em>actually halts</em> in M3 when the policy engine gates real signing.)</p>
         </div>
       </div>
     </div>
@@ -859,17 +888,17 @@
     <p class="lead">The journey has many screens, but it lands or doesn't on these three moments.</p>
     <div class="moments">
       <div class="moment">
-        <div class="mn">MOMENT 1 · S4</div>
+        <div class="mn">MOMENT 1 · S4 <span class="mstone m1">M1</span><span class="mstone m2">M2</span></div>
         <h4>The first tx hash on the explorer</h4>
-        <p>A real, opened-in-a-browser XRPL testnet transaction tied to a payment the agent decided to make. Proof that this isn't a slideshow.</p>
+        <p>A real, opened-in-a-browser XRPL testnet transaction tied to a payment the agent decided to make. Proof that this isn't a slideshow. <em>The tx itself exists from M1 (terminal); the moment lands on a phone in M2.</em></p>
       </div>
       <div class="moment green">
-        <div class="mn">MOMENT 2 · S3</div>
+        <div class="mn">MOMENT 2 · S3 <span class="mstone m3">M3</span></div>
         <h4>The Approve / Deny prompt</h4>
-        <p>The phone vibrates mid-run because a payment crossed the threshold. The person taps once and the loop continues — or doesn't. Autonomy plus control, in one tap.</p>
+        <p>The phone vibrates mid-run because a payment crossed the threshold. The person taps once and the loop continues — or doesn't. Autonomy plus control, in one tap. <em>This is the demo-video moment.</em></p>
       </div>
       <div class="moment red">
-        <div class="mn">MOMENT 3 · S1 / S3</div>
+        <div class="mn">MOMENT 3 · S1 / S3 <span class="mstone m3">M3</span></div>
         <h4>The kill switch lands</h4>
         <p>One tap halts every future signature. Not a soft pause — the policy engine refuses to sign. This is the floor that makes trusting the rest of the loop possible.</p>
       </div>
