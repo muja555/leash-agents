@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leash — agentic payments on XRPL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116; --panel:#151B23; --panel-2:#1B232E; --raised:#212B38;
+    --line:#2A333F; --line-soft:#222B36;
+    --text:#E8EDF4; --muted:#94A2B3; --faint:#647183;
+    --gold:#E8B23A; --gold-dim:#3a2f16;
+    --green:#41C46B; --green-dim:#16301f;
+    --red:#EB5757; --red-dim:#341a1c;
+    --blue:#5C9CFF; --blue-dim:#16243f;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--ink); color:var(--text);
+    font-family:'Inter',system-ui,sans-serif; line-height:1.5;
+    font-size:15px;
+    background-image:radial-gradient(900px 500px at 78% -8%, rgba(92,156,255,.07), transparent 60%),
+                     radial-gradient(700px 400px at 8% 0%, rgba(232,178,58,.06), transparent 55%);
+    min-height:100vh;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 22px 90px;}
+
+  /* header */
+  header{display:flex; align-items:center; gap:16px; padding:18px 0;
+    border-bottom:1px solid var(--line-soft); margin-bottom:24px; flex-wrap:wrap;}
+  .mark{font-family:'Space Grotesk'; font-weight:700; font-size:22px; letter-spacing:-.01em;}
+  .mark .dot{color:var(--gold);}
+  .tag{font-family:'JetBrains Mono'; font-size:11px; padding:3px 8px; border-radius:999px;
+    background:var(--blue-dim); color:var(--blue); margin-left:4px; letter-spacing:.08em;}
+  .status{font-family:'JetBrains Mono'; font-size:12px; padding:5px 11px; border-radius:999px;
+    background:var(--line); color:var(--muted); letter-spacing:.06em;}
+  .status.working{background:var(--green-dim); color:var(--green);}
+  .status.halted{background:var(--red-dim); color:var(--red);}
+  .status .dot{display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:6px; background:currentColor;}
+  header .spacer{flex:1;}
+  .kill-btn{font-family:'JetBrains Mono'; font-size:12px; padding:7px 12px; border-radius:8px;
+    background:transparent; color:var(--red); border:1px solid var(--red-dim); cursor:pointer;
+    letter-spacing:.04em;}
+  .kill-btn:hover{background:var(--red-dim);}
+  .kill-btn.active{background:var(--red); color:#0E1116; border-color:var(--red);}
+
+  /* grid */
+  .grid{display:grid; grid-template-columns:340px 1fr; gap:22px; align-items:start;}
+  @media (max-width:880px){ .grid{grid-template-columns:1fr;} }
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:20px 22px;}
+  .card h2{font-family:'Space Grotesk'; font-weight:600; font-size:16px; margin:0 0 6px;
+    letter-spacing:-.005em; display:flex; align-items:center; gap:8px;}
+  .card h2 .badge{font-family:'JetBrains Mono'; font-size:10px; padding:2px 6px;
+    border-radius:5px; letter-spacing:.08em; font-weight:600;
+    background:var(--blue-dim); color:var(--blue);}
+  .card h2 .badge.m3{background:var(--green-dim); color:var(--green);}
+  .card p.lead{font-size:13px; color:var(--muted); margin:0 0 14px; line-height:1.5;}
+  .card + .card{margin-top:16px;}
+
+  /* form rows */
+  label{display:block; font-family:'JetBrains Mono'; font-size:11px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--faint); margin:14px 0 6px;}
+  input[type="text"], input[type="password"]{width:100%; padding:11px 13px;
+    background:var(--ink); border:1px solid var(--line); border-radius:8px;
+    color:var(--text); font-family:'Inter'; font-size:14px; outline:none;
+    transition:border-color .15s;}
+  input:focus{border-color:var(--blue);}
+  input::placeholder{color:var(--faint);}
+
+  .btn-row{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .btn{font-family:'JetBrains Mono'; font-size:12.5px; padding:9px 14px; border-radius:8px;
+    border:1px solid var(--line); background:var(--panel-2); color:var(--text); cursor:pointer;
+    letter-spacing:.04em; transition:transform .08s, background .15s;}
+  .btn:hover:not(:disabled){transform:translateY(-1px);}
+  .btn:active:not(:disabled){transform:translateY(0);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .btn.green{background:var(--green-dim); color:var(--green); border-color:var(--green-dim);}
+  .btn.green:hover:not(:disabled){background:rgba(65,196,107,.18);}
+  .btn.red{background:var(--red-dim); color:var(--red); border-color:var(--red-dim);}
+  .btn.red:hover:not(:disabled){background:rgba(235,87,87,.18);}
+  .btn.gold{background:var(--gold-dim); color:var(--gold); border-color:var(--gold-dim);}
+  .btn.blue{background:var(--blue-dim); color:var(--blue); border-color:var(--blue-dim);}
+  .btn.big{padding:13px 22px; font-size:14px;}
+  .btn.full{width:100%;}
+
+  /* BYOK status */
+  .byok-status{font-family:'JetBrains Mono'; font-size:12px; margin-top:12px;
+    padding:8px 10px; border-radius:6px; background:var(--ink); color:var(--muted);
+    border:1px solid var(--line);}
+  .byok-status.set{color:var(--green); border-color:var(--green-dim);}
+
+  /* policy display */
+  .kv{display:flex; justify-content:space-between; padding:6px 0;
+    font-family:'JetBrains Mono'; font-size:12.5px; border-bottom:1px solid var(--line-soft);}
+  .kv:last-child{border-bottom:none;}
+  .kv .k{color:var(--faint);}
+  .kv .v{color:var(--text);}
+  .kv .v.gold{color:var(--gold);}
+  .kv .v.mono{font-size:11.5px;}
+
+  /* security note */
+  .secnote{background:var(--red-dim); border:1px solid var(--red-dim);
+    border-radius:8px; padding:11px 13px; margin-top:14px; font-size:12.5px; color:var(--text);
+    line-height:1.5;}
+  .secnote b{color:var(--red); font-weight:600;}
+
+  /* stream */
+  .stream{display:flex; flex-direction:column; gap:8px; max-height:600px; overflow-y:auto;
+    padding-right:6px;}
+  .stream:empty::before{content:"No events yet. Launch a task to start streaming.";
+    color:var(--faint); font-family:'JetBrains Mono'; font-size:12px; padding:20px 0;
+    text-align:center; display:block;}
+  .event{background:var(--ink); border:1px solid var(--line); border-radius:10px;
+    padding:11px 14px; font-size:13.5px; line-height:1.5;
+    border-left-width:3px;}
+  .event.started{border-left-color:var(--blue); color:var(--text);}
+  .event.started b{color:var(--blue);}
+  .event.probing, .event.signing, .event.wallet_loaded{color:var(--muted);}
+  .event.challenge{border-left-color:var(--gold);}
+  .event.challenge b{color:var(--gold);}
+  .event.policy_decision{border-left-color:var(--green);}
+  .event.policy_decision.deny{border-left-color:var(--red);}
+  .event.policy_decision.ask_human{border-left-color:var(--gold);}
+  .event.settled{border-left-color:var(--green); background:rgba(65,196,107,.06);}
+  .event.settled b{color:var(--green);}
+  .event.unlocked{border-left-color:var(--gold); background:rgba(232,178,58,.05);}
+  .event.unlocked b{color:var(--gold);}
+  .event.complete{border-left-color:var(--green); color:var(--green); font-family:'JetBrains Mono'; font-size:12px;}
+  .event.error{border-left-color:var(--red); background:var(--red-dim); color:var(--red);}
+  .event code{font-family:'JetBrains Mono'; font-size:12px; color:var(--gold);
+    background:rgba(232,178,58,.08); padding:1px 5px; border-radius:3px;
+    word-break:break-all;}
+  .event .row{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;}
+  .event ul{margin:6px 0 0; padding-left:18px; color:var(--muted); font-size:13px;}
+  .event ul li{margin-bottom:4px;}
+  .event .explorer{margin-top:10px; display:inline-block;}
+
+  .footer-note{margin-top:30px; padding-top:20px; border-top:1px solid var(--line-soft);
+    font-family:'JetBrains Mono'; font-size:11.5px; color:var(--faint); display:flex;
+    gap:12px; flex-wrap:wrap; justify-content:space-between;}
+  .footer-note a{color:var(--faint); text-decoration:underline;}
+
+  :focus-visible{outline:2px solid var(--gold); outline-offset:2px; border-radius:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="mark">LEASH<span class="dot">.</span></div>
+    <span class="tag">M2 · web · BYOK</span>
+    <div class="spacer"></div>
+    <span class="status" id="status"><span class="dot"></span>IDLE</span>
+    <button class="kill-btn" id="kill-btn" title="Kill switch">🛑 KILL</button>
+  </header>
+
+  <div class="grid">
+
+    <!-- LEFT COLUMN: BYOK + policy -->
+    <div>
+      <div class="card">
+        <h2>Anthropic key <span class="badge">BYOK</span></h2>
+        <p class="lead">Used by the agent's reasoning step <b style="color:var(--text)">in M3</b>. Stored only in <b style="color:var(--text)">your browser's localStorage</b> — never on our server.</p>
+        <label for="byok-input">Key</label>
+        <input id="byok-input" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
+        <div class="btn-row">
+          <button class="btn green" id="byok-save">Save</button>
+          <button class="btn red" id="byok-forget">Forget</button>
+        </div>
+        <div class="byok-status" id="byok-status">No key saved.</div>
+        <div class="secnote">
+          <b>Security:</b> create a <em>new</em> key in the Anthropic Console with a small monthly spend cap ($5–$20). You can revoke it anytime. Worst case: the cap amount.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Policy</h2>
+        <p class="lead">Read-only in M2. Every payment passes the six gates before any signature.</p>
+        <div id="policy"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: task + live feed -->
+    <div>
+      <div class="card">
+        <h2>Delegate a task</h2>
+        <p class="lead">The agent will pay per use to unlock paid research data on XRPL testnet, with the policy engine gating every payment.</p>
+        <label for="task-input">Query</label>
+        <input id="task-input" type="text" placeholder="lithium supply chain risks 2026" />
+        <div class="btn-row">
+          <button class="btn green big" id="launch">▶ Launch Agent</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Live feed</h2>
+        <p class="lead">One event per loop step — probe, policy decision, sign, settled, unlock. The <b style="color:var(--green)">TX SETTLED</b> bubble has a real explorer link.</p>
+        <div id="stream" class="stream"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer-note">
+    <span>LEASH · M2 · web app</span>
+    <span>see also <a href="leash_app_spec.html">full spec</a> · <a href="leash_user_journey.html">user journey</a> · <a href="leash_web_demo.html">walkthrough</a></span>
+  </div>
+</div>
+
+<script>
+(function() {
+  const $ = (id) => document.getElementById(id);
+  const stream = $("stream");
+  const launchBtn = $("launch");
+  const killBtn = $("kill-btn");
+  const statusEl = $("status");
+  const byokInput = $("byok-input");
+  const byokStatus = $("byok-status");
+
+  // ---------- BYOK (localStorage) ----------
+  const BYOK_KEY = "leash.anthropic_key";
+  function refreshByokStatus() {
+    const k = localStorage.getItem(BYOK_KEY);
+    if (k) {
+      byokStatus.textContent = "✓ Key saved in this browser (" + k.slice(0, 9) + "…). Never sent to Leash storage.";
+      byokStatus.classList.add("set");
+      byokInput.value = "";
+      byokInput.placeholder = "(key is saved — paste a new one to replace)";
+    } else {
+      byokStatus.textContent = "No key saved.";
+      byokStatus.classList.remove("set");
+      byokInput.placeholder = "sk-ant-…";
+    }
+  }
+  $("byok-save").addEventListener("click", () => {
+    const v = byokInput.value.trim();
+    if (!v) return;
+    localStorage.setItem(BYOK_KEY, v);
+    refreshByokStatus();
+  });
+  $("byok-forget").addEventListener("click", () => {
+    localStorage.removeItem(BYOK_KEY);
+    refreshByokStatus();
+  });
+  refreshByokStatus();
+
+  // ---------- Kill switch ----------
+  let halted = false;
+  killBtn.addEventListener("click", () => {
+    halted = !halted;
+    killBtn.classList.toggle("active", halted);
+    statusEl.classList.toggle("halted", halted);
+    statusEl.classList.toggle("working", false);
+    statusEl.innerHTML = halted
+      ? '<span class="dot"></span>HALTED'
+      : '<span class="dot"></span>IDLE';
+  });
+
+  // ---------- Policy (fetched once) ----------
+  function dropsToXrp(d) { return (Number(d) / 1_000_000).toFixed(6); }
+  async function loadPolicy() {
+    try {
+      const p = await fetch("/api/policy").then((r) => r.json());
+      $("policy").innerHTML = `
+        <div class="kv"><span class="k">Total budget</span><span class="v gold">${dropsToXrp(p.totalBudgetDrops)} XRP</span></div>
+        <div class="kv"><span class="k">Per-tx cap</span><span class="v">${dropsToXrp(p.perTxCapDrops)} XRP</span></div>
+        <div class="kv"><span class="k">Daily cap</span><span class="v">${dropsToXrp(p.dailyCapDrops)} XRP</span></div>
+        <div class="kv"><span class="k">Approval ≥</span><span class="v">${dropsToXrp(p.approvalThresholdDrops)} XRP</span></div>
+        <div class="kv"><span class="k">Network</span><span class="v">${p.network}</span></div>
+        <div class="kv"><span class="k">Merchant</span><span class="v mono">${p.merchantPayTo.slice(0,8)}…${p.merchantPayTo.slice(-6)}</span></div>
+      `;
+    } catch (e) {
+      $("policy").textContent = "(policy unavailable — is the backend running?)";
+    }
+  }
+  loadPolicy();
+
+  // ---------- Stream rendering ----------
+  function bubble(typeCls, html) {
+    const div = document.createElement("div");
+    div.className = "event " + typeCls;
+    div.innerHTML = html;
+    stream.appendChild(div);
+    stream.scrollTop = stream.scrollHeight;
+    return div;
+  }
+  function clearStream() { stream.innerHTML = ""; }
+
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function render(e) {
+    switch (e.type) {
+      case "started":
+        return bubble("started", `🚀 <b>Started:</b> "${escapeHtml(e.query)}"`);
+      case "probing":
+        return bubble("probing", `→ probing the merchant for a paid resource…`);
+      case "challenge":
+        return bubble("challenge",
+          `💰 <b>402 challenge</b><br>
+          • ${e.amountDrops} drops (${dropsToXrp(e.amountDrops)} XRP)<br>
+          • → <code>${escapeHtml(e.destination)}</code><br>
+          • memo: <code>${escapeHtml(e.memo)}</code>`);
+      case "policy_decision": {
+        const kind = e.decision.kind;
+        const reason = e.decision.reason ? ` — ${escapeHtml(e.decision.reason)}` : "";
+        const emoji = kind === "allow" ? "✓" : kind === "ask_human" ? "🟡" : "🛑";
+        return bubble("policy_decision " + kind,
+          `${emoji} <b>policy:</b> ${kind}${reason}`);
+      }
+      case "wallet_loaded":
+        return bubble("wallet_loaded", `👛 agent wallet: <code>${escapeHtml(e.address)}</code>`);
+      case "signing":
+        return bubble("signing", `✍️ signing + broadcasting Payment on testnet…`);
+      case "settled":
+        return bubble("settled",
+          `✅ <b>TX SETTLED</b><br>
+          • ledger: ${e.ledgerIndex}<br>
+          • hash: <code>${escapeHtml(e.hash)}</code>
+          <a class="btn blue explorer" target="_blank" rel="noopener" href="${escapeHtml(e.explorer)}">View on Explorer ↗</a>`);
+      case "unlocked": {
+        const items = (e.results || []).map((r) => `<li>${escapeHtml(r)}</li>`).join("");
+        return bubble("unlocked",
+          `📊 <b>Got ${e.results.length} results for "${escapeHtml(e.query)}"</b>
+          <ul>${items}</ul>`);
+      }
+      case "complete":
+        return bubble("complete", `✓ Task complete.`);
+      case "error":
+        return bubble("error", `✗ ${escapeHtml(e.message)}`);
+      default:
+        return bubble("started", `<code>${escapeHtml(e.type)}</code>`);
+    }
+  }
+
+  function setWorking(on) {
+    launchBtn.disabled = on;
+    launchBtn.textContent = on ? "⏳ running…" : "▶ Launch Agent";
+    if (halted) return;
+    statusEl.classList.toggle("working", on);
+    statusEl.innerHTML = on
+      ? '<span class="dot"></span>WORKING'
+      : '<span class="dot"></span>IDLE';
+  }
+
+  async function runTask() {
+    if (halted) {
+      bubble("error", `🛑 Halted — toggle the KILL button to resume.`);
+      return;
+    }
+    const query = ($("task-input").value || "lithium supply chain risks 2026").trim();
+    const anthropicKey = localStorage.getItem(BYOK_KEY) || undefined;
+
+    clearStream();
+    setWorking(true);
+
+    try {
+      const resp = await fetch("/api/task", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, anthropicKey }),
+      });
+      if (!resp.body) throw new Error("no response body");
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buffer.indexOf("\n\n")) !== -1) {
+          const block = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          let ev = "message", data = "";
+          for (const line of block.split("\n")) {
+            if (line.startsWith("event: ")) ev = line.slice(7).trim();
+            else if (line.startsWith("data: ")) data += line.slice(6);
+          }
+          if (!data) continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (ev === "agent") render(parsed);
+            else if (ev === "done" && !parsed.ok && parsed.error) {
+              render({ type: "error", message: parsed.error });
+            }
+          } catch (e) {
+            // ignore malformed lines
+          }
+        }
+      }
+    } catch (err) {
+      render({ type: "error", message: err && err.message ? err.message : String(err) });
+    } finally {
+      setWorking(false);
+    }
+  }
+  launchBtn.addEventListener("click", runTask);
+})();
+</script>
+</body>
+</html>

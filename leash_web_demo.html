@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leash — web app demo · setup + walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1116; --panel:#151B23; --panel-2:#1B232E; --raised:#212B38;
+    --line:#2A333F; --line-soft:#222B36;
+    --text:#E8EDF4; --muted:#94A2B3; --faint:#647183;
+    --gold:#E8B23A; --gold-dim:#3a2f16;
+    --green:#41C46B; --green-dim:#16301f;
+    --red:#EB5757; --red-dim:#341a1c;
+    --blue:#5C9CFF; --blue-dim:#16243f;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--ink); color:var(--text);
+    font-family:'Inter',system-ui,sans-serif; line-height:1.6;
+    font-size:15.5px; letter-spacing:.005em;
+    background-image:radial-gradient(900px 500px at 78% -8%, rgba(92,156,255,.07), transparent 60%),
+                     radial-gradient(700px 400px at 8% 0%, rgba(232,178,58,.06), transparent 55%);}
+  .wrap{max-width:1140px; margin:0 auto; padding:0 22px 90px;}
+
+  nav.bar{position:sticky; top:0; z-index:20; backdrop-filter:blur(10px);
+    background:rgba(14,17,22,.82); border-bottom:1px solid var(--line-soft);}
+  nav.bar .inner{max-width:1140px; margin:0 auto; padding:11px 22px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  nav.bar .mark{font-family:'Space Grotesk'; font-weight:700; letter-spacing:.04em; font-size:15px;}
+  nav.bar .mark .dot{color:var(--gold);}
+  nav.bar a{color:var(--muted); text-decoration:none; font-size:12.5px;
+    font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:.08em;}
+  nav.bar a:hover{color:var(--text);}
+  nav.bar .links{display:flex; gap:16px; flex-wrap:wrap; margin-left:auto;}
+
+  header.hero{padding:54px 0 30px; border-bottom:1px solid var(--line-soft);}
+  .eyebrow{font-family:'JetBrains Mono'; font-size:12px; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--gold); margin:0 0 18px;}
+  h1{font-family:'Space Grotesk'; font-weight:700; font-size:clamp(34px,6vw,54px);
+    line-height:1.04; margin:0 0 8px; letter-spacing:-.02em;}
+  h1 .leash{color:var(--gold);}
+  .sub{font-size:15px; color:var(--muted); font-family:'JetBrains Mono'; margin:0 0 26px;}
+  .thesis{max-width:760px; font-size:17px; color:var(--text); border-left:2px solid var(--gold);
+    padding:4px 0 4px 18px; margin:0 0 8px;}
+  .thesis b{color:var(--gold); font-weight:600;}
+
+  section{padding:54px 0 6px; scroll-margin-top:64px;}
+  .sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:8px;}
+  .sec-num{font-family:'JetBrains Mono'; color:var(--faint); font-size:13px; letter-spacing:.1em;}
+  h2{font-family:'Space Grotesk'; font-weight:600; font-size:26px; margin:0; letter-spacing:-.01em;}
+  .lead{color:var(--muted); max-width:780px; margin:6px 0 26px;}
+  code{font-family:'JetBrains Mono'; font-size:.9em; color:var(--gold);
+    background:rgba(232,178,58,.08); border:1px solid var(--gold-dim);
+    border-radius:4px; padding:1px 6px;}
+  pre{background:var(--ink); border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; font-family:'JetBrains Mono'; font-size:13px;
+    color:var(--text); line-height:1.5; margin:0 0 18px;}
+  pre code{background:none; border:none; padding:0; color:var(--gold);}
+
+  /* setup steps */
+  .steps{counter-reset:step;}
+  .step{position:relative; display:grid; grid-template-columns:48px 1fr; gap:14px;
+    padding:16px 18px; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; margin-bottom:14px;}
+  .step::before{counter-increment:step; content:counter(step);
+    grid-column:1; width:32px; height:32px; border-radius:50%;
+    background:var(--panel-2); border:1px solid var(--gold-dim);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono'; font-weight:700; color:var(--gold); font-size:14px;
+    margin-top:2px;}
+  .step h3{font-family:'Space Grotesk'; font-weight:600; font-size:15px;
+    margin:0 0 6px; letter-spacing:-.005em;}
+  .step p{color:var(--muted); font-size:13.5px; margin:0 0 8px;}
+
+  /* mockup of the running page */
+  .mockup-wrap{background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:20px;}
+  .mockup-bar{display:flex; align-items:center; gap:8px; padding-bottom:12px; margin-bottom:16px;
+    border-bottom:1px solid var(--line-soft);}
+  .mockup-bar .dot{width:11px; height:11px; border-radius:50%;}
+  .mockup-bar .dot:nth-child(1){background:#FF5F57;}
+  .mockup-bar .dot:nth-child(2){background:#FEBC2E;}
+  .mockup-bar .dot:nth-child(3){background:#28C840;}
+  .mockup-bar .url{flex:1; text-align:center; font-family:'JetBrains Mono'; font-size:12px;
+    color:var(--muted); background:var(--ink); padding:5px 12px; border-radius:6px;
+    border:1px solid var(--line);}
+  .mockup-bar .url b{color:var(--text); font-weight:500;}
+  .mockup{display:grid; grid-template-columns:340px 1fr; gap:18px;}
+  @media (max-width:880px){ .mockup{grid-template-columns:1fr;} }
+
+  .mcard{background:var(--ink); border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px;}
+  .mcard + .mcard{margin-top:12px;}
+  .mcard h4{font-family:'Space Grotesk'; font-size:14px; margin:0 0 4px; display:flex; align-items:center; gap:8px;}
+  .mcard h4 .badge{font-family:'JetBrains Mono'; font-size:10px; padding:2px 6px;
+    border-radius:5px; letter-spacing:.08em;
+    background:var(--blue-dim); color:var(--blue);}
+  .mcard p.lead{font-size:12px; color:var(--muted); margin:0 0 10px; line-height:1.45;}
+  .mcard input{width:100%; padding:8px 10px; background:var(--panel); border:1px solid var(--line);
+    border-radius:6px; color:var(--text); font-family:'Inter'; font-size:12px;
+    margin-top:6px;}
+  .mlabel{font-family:'JetBrains Mono'; font-size:9.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--faint); margin:8px 0 4px;}
+  .mbtnrow{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;}
+  .mbtn{font-family:'JetBrains Mono'; font-size:11px; padding:6px 12px; border-radius:6px;
+    border:1px solid var(--line); background:var(--panel-2);
+    letter-spacing:.04em; cursor:default;}
+  .mbtn.green{background:var(--green-dim); color:var(--green); border-color:var(--green-dim);}
+  .mbtn.red{background:var(--red-dim); color:var(--red); border-color:var(--red-dim);}
+  .mbtn.blue{background:var(--blue-dim); color:var(--blue); border-color:var(--blue-dim);}
+  .mbtn.gold{background:var(--gold-dim); color:var(--gold); border-color:var(--gold-dim);}
+
+  .mkv{display:flex; justify-content:space-between; padding:5px 0;
+    font-family:'JetBrains Mono'; font-size:11.5px; border-bottom:1px solid var(--line-soft);}
+  .mkv:last-child{border-bottom:none;}
+  .mkv .k{color:var(--faint);} .mkv .v{color:var(--text);}
+  .mkv .v.gold{color:var(--gold);}
+
+  .mfeed{display:flex; flex-direction:column; gap:7px;}
+  .mevt{background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:9px 12px; font-size:12px; line-height:1.4; border-left-width:3px;}
+  .mevt.b{border-left-color:var(--blue);} .mevt.b b{color:var(--blue);}
+  .mevt.gld{border-left-color:var(--gold);} .mevt.gld b{color:var(--gold);}
+  .mevt.gr{border-left-color:var(--green); background:rgba(65,196,107,.05);} .mevt.gr b{color:var(--green);}
+  .mevt.unl{border-left-color:var(--gold); background:rgba(232,178,58,.05);} .mevt.unl b{color:var(--gold);}
+  .mevt code{font-family:'JetBrains Mono'; font-size:11px; color:var(--gold);
+    background:rgba(232,178,58,.08); padding:1px 4px; border-radius:3px;
+    word-break:break-all; border:none;}
+  .mevt ul{margin:5px 0 0; padding-left:16px; font-size:11.5px; color:var(--muted);}
+  .mevt a.explore{display:inline-block; margin-top:7px; padding:6px 10px;
+    background:var(--blue-dim); color:var(--blue); border-radius:6px;
+    text-decoration:none; font-family:'JetBrains Mono'; font-size:11px;}
+
+  .secnote{background:var(--red-dim); border:1px solid var(--red-dim);
+    border-radius:10px; padding:14px 16px; margin:14px 0;}
+  .secnote .nt{font-family:'JetBrains Mono'; font-size:11px; color:var(--red);
+    letter-spacing:.1em; margin-bottom:6px;}
+  .secnote p{margin:0; font-size:13.5px; line-height:1.5;}
+  .secnote b{color:var(--text); font-weight:600;}
+
+  .note{background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--gold);
+    border-radius:10px; padding:15px 17px; margin:14px 0;}
+  .note .nt{font-family:'JetBrains Mono'; font-size:12px; color:var(--gold);
+    letter-spacing:.06em; margin-bottom:5px;}
+  .note p{font-size:13.5px; color:var(--muted); margin:0; line-height:1.5;}
+  .note p b{color:var(--text); font-weight:600;}
+
+  .mstone{font-family:'JetBrains Mono'; font-size:10px; padding:2px 6px;
+    border-radius:5px; letter-spacing:.08em; font-weight:600; vertical-align:middle; display:inline-block;}
+  .mstone.m2{background:var(--blue-dim); color:var(--blue);}
+  .mstone.m3{background:var(--green-dim); color:var(--green);}
+
+  footer{margin-top:48px; padding-top:22px; border-top:1px solid var(--line-soft);
+    font-family:'JetBrains Mono'; font-size:12px; color:var(--faint);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+  footer a{color:var(--faint); text-decoration:underline;}
+</style>
+</head>
+<body>
+
+<nav class="bar">
+  <div class="inner">
+    <span class="mark">LEASH<span class="dot">.</span> <span style="color:var(--muted); font-weight:500;">/ web app demo</span></span>
+    <div class="links">
+      <a href="#setup">Setup</a>
+      <a href="#tour">Tour</a>
+      <a href="#security">Security</a>
+      <a href="leash_user_journey.html">User journey ↗</a>
+      <a href="leash_app_spec.html">Full spec ↗</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">M2 · web app is the v1 frontend</p>
+    <h1><span class="leash">Leash</span> — the web demo</h1>
+    <p class="sub">Open a URL. Paste a key. Launch an agent. Watch a real testnet payment settle in your browser.</p>
+    <p class="thesis">Leash v1 ships as a <b>web app at localhost:8080</b> — vanilla HTML/CSS/JS in front, Express + Server-Sent Events behind. BYOK Anthropic key in <code>localStorage</code> means the secret never leaves your browser. Same M1 loop on the backend; only the shell changes.</p>
+  </header>
+
+  <!-- ============= SETUP ============= -->
+  <section id="setup">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Setup · 3 steps</h2></div>
+    <p class="lead">From clone to first testnet payment in two minutes.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div>
+          <h3>Install + configure</h3>
+<pre><code>npm install
+cp .env.example .env</code></pre>
+          <p>First run leaves the wallet seeds blank; the server auto-funds a merchant and an agent wallet from the testnet faucet and prints the seeds so you can save them back into <code>.env</code> for re-runs.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div>
+          <h3>Boot the web app</h3>
+<pre><code>npm run web</code></pre>
+          <p>Boots Express + SSE backend + serves <code>public/index.html</code> as the frontend on <code>http://localhost:8080</code>. The same Express instance also serves the M1 merchant routes (<code>/research</code>, <code>/api/policy</code>, <code>/api/task</code>).</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div>
+          <h3>Open the page</h3>
+          <p>Open <code>http://localhost:8080</code> in any browser. Type a query, click <b style="color:var(--green)">▶ Launch Agent</b>. The live feed pane streams every loop step — the green <b style="color:var(--green)">TX SETTLED</b> bubble has a real explorer link.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= TOUR ============= -->
+  <section id="tour">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Tour of the running page</h2></div>
+    <p class="lead">What you'll see at <code>localhost:8080</code> after launching a task.</p>
+
+    <div class="mockup-wrap">
+      <div class="mockup-bar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="url">🔒 <b>localhost:8080</b></span>
+      </div>
+
+      <div class="mockup">
+
+        <!-- LEFT: BYOK + policy -->
+        <div>
+          <div class="mcard">
+            <h4>Anthropic key <span class="badge">BYOK</span></h4>
+            <p class="lead">Used in M3 for Claude reasoning. Stored only in your browser's <code>localStorage</code> — never on our server.</p>
+            <div class="mlabel">Key</div>
+            <input type="password" value="sk-ant-api03-…••••••••••••" readonly />
+            <div class="mbtnrow">
+              <span class="mbtn green">Save</span>
+              <span class="mbtn red">Forget</span>
+            </div>
+            <div style="margin-top:8px; font-family:'JetBrains Mono'; font-size:11px; color:var(--green); padding:6px 8px; background:rgba(65,196,107,.07); border-radius:5px;">
+              ✓ Key saved in this browser (sk-ant-api…)
+            </div>
+          </div>
+
+          <div class="mcard">
+            <h4>Policy</h4>
+            <p class="lead">Read-only in M2.</p>
+            <div class="mkv"><span class="k">Total budget</span><span class="v gold">50.000000 XRP</span></div>
+            <div class="mkv"><span class="k">Per-tx cap</span><span class="v">0.200000 XRP</span></div>
+            <div class="mkv"><span class="k">Daily cap</span><span class="v">5.000000 XRP</span></div>
+            <div class="mkv"><span class="k">Approval ≥</span><span class="v">0.100000 XRP</span></div>
+            <div class="mkv"><span class="k">Network</span><span class="v">xrpl:1</span></div>
+            <div class="mkv"><span class="k">Merchant</span><span class="v">rHhbuEMy…dZCjSQ</span></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: task + live feed -->
+        <div>
+          <div class="mcard">
+            <h4>Delegate a task</h4>
+            <p class="lead">The agent pays per use to unlock paid research on XRPL testnet, with the policy engine gating every payment.</p>
+            <div class="mlabel">Query</div>
+            <input type="text" value="lithium supply chain risks 2026" readonly />
+            <div class="mbtnrow"><span class="mbtn green">▶ Launch Agent</span></div>
+          </div>
+
+          <div class="mcard">
+            <h4>Live feed</h4>
+            <div class="mfeed">
+              <div class="mevt b">🚀 <b>Started:</b> "lithium supply chain risks 2026"</div>
+              <div class="mevt">→ probing the merchant for a paid resource…</div>
+              <div class="mevt gld">💰 <b>402 challenge</b><br>• 1000 drops (0.001 XRP)<br>• → <code>rHhbuEMyQ…CjSQ</code><br>• memo: <code>leash-9dcf0e09…</code></div>
+              <div class="mevt gr">✓ <b>policy:</b> allow</div>
+              <div class="mevt">👛 agent wallet: <code>rwPR8b7…rEm</code></div>
+              <div class="mevt">✍️ signing + broadcasting Payment on testnet…</div>
+              <div class="mevt gr">
+                ✅ <b>TX SETTLED</b><br>
+                • ledger: 18334152<br>
+                • hash: <code>C1F390CC…E0E484</code>
+                <a class="explore" href="https://testnet.xrpl.org/transactions/C1F390CCFC482ED378393B35E3F52A2C5A17E17DA177AF1E79D7284354E0E484">View on Explorer ↗</a>
+              </div>
+              <div class="mevt unl">📊 <b>Got 3 results for "lithium supply chain risks 2026"</b>
+                <ul>
+                  <li>Chilean brine output up 6% YoY but water-rights litigation is escalating.</li>
+                  <li>DRC cobalt-tied refinery capacity creates indirect lithium concentration risk.</li>
+                  <li>EU CRMA Tier-1 status pulls 2026 demand forward by ~14%.</li>
+                </ul>
+              </div>
+              <div class="mevt gr" style="font-family:'JetBrains Mono'; font-size:11px;">✓ Task complete.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= SECURITY ============= -->
+  <section id="security">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Security model — BYOK in the browser</h2></div>
+    <p class="lead">Your Anthropic key is a high-trust secret. Here's exactly what Leash does with it, and what it never does.</p>
+
+    <div class="secnote">
+      <div class="nt">WHAT LEASH DOES</div>
+      <p><b>Stored in:</b> your browser's <code>localStorage</code> under the key <code>leash.anthropic_key</code>. Same security model as any other JS app's localStorage — visible to JavaScript running on the page, not visible to other sites.<br><br>
+      <b>Sent to backend:</b> in the JSON body of <code>POST /api/task</code> over the SSE stream, only when you click <b>Launch Agent</b>.<br><br>
+      <b>Used in backend:</b> held in memory for the duration of the task, passed to the Anthropic SDK for that task only.<br><br>
+      <b>Forgotten:</b> when the SSE stream closes. No file, no database, no log.</p>
+    </div>
+
+    <div class="note">
+      <div class="nt">RECOMMENDED PRACTICE</div>
+      <p>① <b>Create a NEW key</b> in the Anthropic Console specifically for Leash — don't reuse your main key.<br><br>
+      ② <b>Set a hard spend cap</b> on it ($5–$20/mo). Anthropic Console supports per-key budgets.<br><br>
+      ③ <b>Revoke from the console</b> if anything feels off. The cap bounds your worst case.</p>
+    </div>
+  </section>
+
+  <!-- ============= WHAT'S MISSING ============= -->
+  <section id="missing">
+    <div class="sec-head"><span class="sec-num">04</span><h2>What this demo does NOT do yet</h2></div>
+    <p class="lead">Honest about M2 scope so you can read the demo correctly. None of these are blockers; they're the M3 punch list.</p>
+
+    <div class="note">
+      <div class="nt">M3 PUNCH LIST</div>
+      <p>
+      ① <b>Claude reasoning</b> — the agent is still deterministic in M2. The BYOK key is captured in the UX but the Anthropic API isn't called yet. M3 wires the tool-use loop. <span class="mstone m3">M3</span><br><br>
+      ② <b>Approve / Deny modal</b> — every payment is below the threshold in M2, so the prompt never fires. M3 shows a web modal when a payment crosses the threshold; you click to release or refuse the signature. <span class="mstone m3">M3</span><br><br>
+      ③ <b>Per-user wallet + deposit flow</b> — M2 uses a shared agent wallet auto-funded from the testnet faucet. M3 generates a per-user wallet, shows the address, and links to the testnet faucet so visitors can fund their own agent. <span class="mstone m3">M3</span><br><br>
+      ④ <b>Hard kill switch</b> — the KILL button blocks new tasks but doesn't interrupt an in-flight run. M3 routes the halt flag through the policy engine, refusing every future signature mid-run. <span class="mstone m3">M3</span>
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <span>LEASH · web app demo</span>
+    <span>see also <a href="leash_user_journey.html">user journey</a> · <a href="leash_app_spec.html">full spec</a> · <a href="README.md">repo readme</a></span>
+  </footer>
+
+</div>
+</body>
+</html>
