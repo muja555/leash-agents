@@ -53,6 +53,10 @@ Mainnet · multiple task types · production-grade custody · funded-wallet AI b
 
 ## Current progress (2026-06-18)
 
-- **M1 — DONE.** Direct-XRPL thin slice. First settled testnet tx `4B85617C1C393E97A72A9BDD81D34F5C8B718397DAEEDD397A5FD0912EBCDE38` (ledger 18297486). Commit `a79daa0`. Proof: https://testnet.xrpl.org/transactions/4B85617C1C393E97A72A9BDD81D34F5C8B718397DAEEDD397A5FD0912EBCDE38
-- **M2 — IN PROGRESS / SCAFFOLDED.** Telegram bot (`telegraf`) wired to the existing M1 backend via an event-stream refactor of the agent. Deterministic agent loop streams reasoning/payment events into the chat. Commands: `/start`, `/task`, `/budget`, `/halt`, `/forget`, `/explorer`. See `src/bot/`. Ready for first live test once a bot token is set in `.env`.
-- **Next: M3.** Wire Claude with BYOK, threshold-triggered Approve/Deny via inline buttons, functional Kill Switch enforcement.
+- **M1 — DONE.** Direct-XRPL thin slice. First settled testnet tx `4B85617C1C393E97A72A9BDD81D34F5C8B718397DAEEDD397A5FD0912EBCDE38` (ledger 18297486). Commit `a79daa0`. Proof: https://testnet.xrpl.org/transactions/4B85617C1C393E97A72A9BDD81D34F5C8B718397DAEEDD397A5FD0912EBCDE38 . Re-verified after the M2 event-stream refactor with tx `B94F2A00AF6802146A817E6D46AA81E37465CBC9A97D92E41B05A72966C6FCCB` (ledger 18331702).
+- **M2 — SCAFFOLDED + COMMITTED, awaiting first live chat test.** Telegram bot (`telegraf`) wired to the existing M1 backend via an event-stream refactor (`src/agent/events.ts`). Deterministic agent loop streams probe/policy/signing/settled/unlocked events as chat messages. Inline keyboard button on `TX SETTLED` opens the real testnet explorer page. Commands: `/start`, `/task`, `/budget`, `/halt`, `/forget`, `/explorer`. See `src/bot/telegram.ts`. Commit `e1729dc`. To first-test: set `TELEGRAM_BOT_TOKEN` in `.env` (from `@BotFather`), `npm run bot`, send `/task lithium supply chain risks 2026` from Telegram. Walkthrough in `leash_telegram_demo.html`.
+- **Next: M3.** Wire Claude (BYOK) into the agent loop. Add threshold-triggered Approve/Deny via Telegram inline-keyboard buttons. Wire `/halt` through the policy engine for in-flight refusal (currently only blocks new tasks). Add BYOK key onboarding + envelope encryption at rest.
+
+## Repo
+- Private: https://github.com/muja555/leash
+- Main branch: `main` (linear history; M1 then M2 commits).
