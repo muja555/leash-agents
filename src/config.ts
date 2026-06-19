@@ -43,6 +43,6 @@ export const config = {
     approvalThresholdDrops: envInt("POLICY_APPROVAL_THRESHOLD_DROPS", 100_000),
   },
   agent: {
-    query: env("AGENT_QUERY", "lithium supply chain risks 2026"),
+    query: env("AGENT_QUERY", "compare AI coding tools 2026"),
   },
 } as const;

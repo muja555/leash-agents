@@ -23,7 +23,7 @@ npm run web                # opens at http://localhost:8080
 
 Open http://localhost:8080 in your browser:
 1. Paste an Anthropic API key in the BYOK card (saved only in your browser's localStorage). It's *visible in the UX* for M3 but not yet used by the agent.
-2. Type a query (default: `lithium supply chain risks 2026`).
+2. Type a query (default: `compare AI coding tools 2026`).
 3. Click **▶ Launch Agent**.
 4. Watch the live feed stream events: probe → policy → sign → ✅ TX SETTLED. Click **View on Explorer** to see the real testnet transaction.
 

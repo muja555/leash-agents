@@ -190,7 +190,7 @@
         <h2>Delegate a task</h2>
         <p class="lead">The agent will pay per use to unlock paid research data on XRPL testnet, with the policy engine gating every payment.</p>
         <label for="task-input">Query</label>
-        <input id="task-input" type="text" placeholder="lithium supply chain risks 2026" />
+        <input id="task-input" type="text" placeholder="compare AI coding tools 2026" />
         <div class="btn-row">
           <button class="btn green big" id="launch">▶ Launch Agent</button>
         </div>
@@ -354,7 +354,7 @@
       bubble("error", `🛑 Halted — toggle the KILL button to resume.`);
       return;
     }
-    const query = ($("task-input").value || "lithium supply chain risks 2026").trim();
+    const query = ($("task-input").value || "compare AI coding tools 2026").trim();
     const anthropicKey = localStorage.getItem(BYOK_KEY) || undefined;
 
     clearStream();

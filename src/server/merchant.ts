@@ -8,10 +8,10 @@ const SERVICE = "leash:research";
 const NONCE_TTL_MS = 10 * 60 * 1000;
 
 const CANNED_RESEARCH: Record<string, string[]> = {
-  "lithium supply chain risks 2026": [
-    "Chilean brine output up 6% YoY but water-rights litigation is escalating.",
-    "DRC cobalt-tied refinery capacity creates indirect lithium concentration risk.",
-    "EU CRMA Tier-1 status pulls 2026 demand forward by ~14%.",
+  "compare AI coding tools 2026": [
+    "Cursor leads with native MCP + multi-model routing; Claude Code's Sonnet 4.6 mode is preferred for refactors per recent dev polls.",
+    "Cline and Aider dominate BYOK power-users; both shipped persistent memory across sessions in Q1 2026.",
+    "GitHub Copilot Workspace hit general availability — early reviews call it 'first real Cursor competitor in a year.'",
   ],
 };
 
