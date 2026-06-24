@@ -45,6 +45,7 @@ export type AgentEvent =
   | { type: "approval_resolved"; decision: "approve" | "deny"; kind: "merchant" | "fee" }
   | { type: "halted"; reason: string }
   | { type: "thinking"; text: string }
+  | { type: "synthesis"; text: string; model: string; costUsdCents: number }
   | { type: "unlocked"; query: string; results: string[] }
   | {
       type: "complete";
@@ -99,6 +100,9 @@ export const consoleSink: EventSink = (e) => {
       break;
     case "thinking":
       console.log(`[agent] thinking: ${e.text}`);
+      break;
+    case "synthesis":
+      console.log(`[agent] ${e.model} synthesis (${e.costUsdCents}¢):\n${e.text}`);
       break;
     case "signing":
       console.log(`[agent] signing + broadcasting Payment…`);

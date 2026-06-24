@@ -68,9 +68,7 @@ export async function startWeb(): Promise<void> {
     const apiKey = body.apiKey ?? body.anthropicKey;
     const model = body.model ?? config.ai.defaultModel;
     const chain = resolveChain(body.chain);
-    void provider; // M2: captured for M3 reasoning step, intentionally unused here
-    void apiKey; //   (never logged, never persisted)
-    void model; //    (selected model rides along for the M3 reasoning step)
+    void provider; // legacy field — provider is now derived from the model id
 
     // Min/max from the Policy card flow into the REAL engine for this run.
     const approvalThresholdDrops = dropsOrUndefined(body.minDrops);
@@ -107,6 +105,9 @@ export async function startWeb(): Promise<void> {
         merchantPayTo: payTo,
         query,
         chain,
+        model,
+        aiKey: apiKey,
+        userId: DEMO_USER,
         policy: { approvalThresholdDrops, perTxCapDrops },
         isHalted, // server-side kill switch — refused mid-run
         requestApproval: async (info) => {

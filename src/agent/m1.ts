@@ -1,5 +1,7 @@
+import { getGateway, withMarkup } from "../ai/gateway.js";
 import { getAdapter, resolveChain, type ChainId } from "../chains/index.js";
 import { config } from "../config.js";
+import { getCredits } from "../credits/ledger.js";
 import { appendPayment } from "../log/payments.js";
 import {
   evaluate,
@@ -55,6 +57,12 @@ export interface RunM1Args {
   query?: string;
   /** Settlement chain for this run; defaults to config.chains.default (xrpl). */
   chain?: ChainId;
+  /** AI gateway model id for the reasoning step (M3). */
+  model?: string;
+  /** BYOK key for the reasoning step; else the configured gateway key is used. */
+  aiKey?: string;
+  /** Credits/user id to bill the AI cost against (in-memory ledger). */
+  userId?: string;
   /** Per-run min/max overrides from the caller; applied in the policy engine. */
   policy?: PolicyOverrides;
   /**
@@ -216,6 +224,30 @@ export async function runM1(
   }
   const data = (await retry.json()) as { query: string; results: string[] };
   await emit({ type: "unlocked", query: data.query, results: data.results });
+
+  // ----- 5b. Reason over the paid results (AI gateway) -----
+  // Graceful: only runs when a key is available (BYOK or configured gateway).
+  // Without one, the agent stays deterministic and the raw results stand.
+  const gateway = getGateway();
+  const haveAi = Boolean(args.aiKey) || gateway.enabled;
+  if (haveAi) {
+    const model = args.model ?? config.ai.defaultModel;
+    try {
+      await emit({ type: "thinking", text: `reading ${data.results.length} paid sources with ${model}…` });
+      const prompt =
+        `User question: "${data.query}"\n\n` +
+        `Paid research results:\n${data.results.map((r, i) => `${i + 1}. ${r}`).join("\n")}\n\n` +
+        `Write a concise, well-sourced answer in 3–5 sentences. Cite the result numbers you used.`;
+      const ai = await gateway.complete({ model, prompt, apiKey: args.aiKey });
+      const charge = withMarkup(ai.usage.costUsdCents);
+      // No-op when credits are disabled (BYOK mode); deducts when enabled.
+      await getCredits().debit(args.userId ?? "demo", charge, `ai:${model}`);
+      await emit({ type: "synthesis", text: ai.text, model: ai.model, costUsdCents: charge });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await emit({ type: "thinking", text: `AI synthesis skipped — ${msg}` });
+    }
+  }
 
   // ----- 6. Record the spend + log the payment -----
   spend = recordSpend(spend, paymentRequest);

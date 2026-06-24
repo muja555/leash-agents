@@ -102,6 +102,13 @@
     border-radius:13px; padding:14px 16px; margin-bottom:14px;}
   .deliverable .d-q{font-family:'JetBrains Mono'; font-size:11px; color:var(--faint);
     letter-spacing:.04em; margin-bottom:10px;}
+  .deliverable .d-summary{font-size:14.5px; line-height:1.6; color:var(--text);
+    padding:12px 14px; margin-bottom:14px; border-radius:10px;
+    background:rgba(92,156,255,.07); border:1px solid rgba(92,156,255,.2);}
+  .deliverable .d-summary .d-by{display:block; margin-top:8px; font-family:'JetBrains Mono';
+    font-size:10.5px; color:var(--blue);}
+  .deliverable .d-srctitle{font-family:'JetBrains Mono'; font-size:10px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--faint); margin-bottom:8px;}
   .deliverable .d-q b{color:var(--text);}
   .deliverable ol{margin:0; padding-left:20px; color:var(--text); font-size:14px;}
   .deliverable ol li{margin-bottom:8px; line-height:1.5;}
@@ -809,6 +816,7 @@
     if (e.type === "started") runData.query = e.query;
     else if (e.type === "challenge") runData.merchantDrops = Number(e.amountDrops);
     else if (e.type === "fee") { runData.feeDrops = Number(e.amountDrops); runData.feeBps = e.bps; }
+    else if (e.type === "synthesis") { runData.summary = e.text; runData.summaryModel = e.model; }
     else if (e.type === "unlocked") { runData.results = e.results || []; runData.query = e.query; }
     else if (e.type === "settled") {
       if (e.kind === "fee") { runData.feeHash = e.hash; runData.feeExplorer = e.explorer; }
@@ -847,6 +855,8 @@
     resultBody.innerHTML = `
       <div class="deliverable">
         <div class="d-q">REPORT · <b>"${escapeHtml(r.query || "")}"</b></div>
+        ${r.summary ? `<div class="d-summary">${escapeHtml(r.summary)}<span class="d-by">— ${escapeHtml(r.summaryModel || "AI")}</span></div>` : ""}
+        ${r.summary ? `<div class="d-srctitle">Sources</div>` : ""}
         <ol>${items}</ol>
       </div>
       <div class="cost-grid">
@@ -882,7 +892,8 @@
     if (r.explorer) lines.push(`Merchant explorer: ${r.explorer}`);
     if (r.feeHash) lines.push(`Fee tx: ${r.feeHash}`);
     if (r.feeExplorer) lines.push(`Fee explorer: ${r.feeExplorer}`);
-    lines.push("", "## Results");
+    if (r.summary) lines.push("", `## Answer (${r.summaryModel || "AI"})`, r.summary);
+    lines.push("", "## Sources");
     (r.results || []).forEach((x, i) => lines.push(`${i + 1}. ${x}`));
     const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
@@ -971,6 +982,9 @@
         return bubble("halted", `🛑 <b>Halted</b> — ${escapeHtml(e.reason)}. No signature produced.`);
       case "thinking":
         return bubble("thinking", `💭 ${escapeHtml(e.text)}`);
+      case "synthesis":
+        return bubble("unlocked",
+          `🧠 <b>${escapeHtml(e.model)}</b> · synthesized answer ${e.costUsdCents ? `<span style="color:var(--faint)">(${e.costUsdCents}¢)</span>` : ""}<br>${escapeHtml(e.text)}`);
       case "unlocked": {
         const items = (e.results || []).map((r) => `<li>${escapeHtml(r)}</li>`).join("");
         return bubble("unlocked",
