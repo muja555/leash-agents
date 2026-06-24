@@ -374,8 +374,20 @@
   <header class="hero">
     <p class="eyebrow">User journey · screens, flow, and connections</p>
     <h1><span class="leash">Leash</span> — what the user actually sees</h1>
-    <p class="sub">Each screen in simple wireframes, the connections between them, and the path from task to verified report.</p>
+    <p class="sub">Each screen in simple wireframes, the connections between them, and the path from task to verified report. <b>v1 ships as a web app</b> (localhost:8080); the same loop maps to mobile later.</p>
     <p class="thesis">Six screens. One <b>happy path</b>: S1 → S2 → S3 → S6. Two <b>branches</b> you can open any time: S4 (Tx detail) and S5 (Budget &amp; policy). The agent does the work, the human stays in command.</p>
+
+    <div class="goal" style="margin:18px 0 0;border-color:var(--blue)">
+      <div>
+        <div class="gn" style="color:var(--blue)">STRATEGY · APPROACH A — CONTROL PLANE OVER THE RAILS</div>
+        <div class="gt" style="font-size:14px;line-height:1.6">
+          Leash is the <b>neutral, non-custodial control tower</b> for agents that pay — it sits <em>above</em> the payment protocols (x402 / AP2) and <em>on top of</em> wallet infra, owning the layer they treat as an afterthought: <b>policy, human oversight, and operator UX</b>. Three pillars are now scaffolded so going live is config + one adapter:
+          <br>· <b>Multi-chain</b> — XRPL live; Solana / Base / Ethereum behind one <code>PaymentAdapter</code> interface, gated by the same chain-agnostic policy engine.
+          <br>· <b>AI tokens</b> — many models via one gateway (OpenRouter), billed from <b>prepaid USD credits</b> or BYOK.
+          <br>· <b>Non-custodial</b> — the user funds their <em>own</em> wallet; Leash never holds funds destined for merchants (sidesteps money-transmitter licensing).
+        </div>
+      </div>
+    </div>
 
     <div class="legend">
       <span><i style="background:var(--red)"></i> Halt / Deny / Block</span>
@@ -388,16 +400,16 @@
       <div class="mt">MILESTONE BADGES — WHEN EACH INTERACTION BECOMES REAL</div>
       <div class="mgrid">
         <div class="mitem"><span class="mstone m1">M1</span><div><b>Thin slice (done)</b>One real testnet payment, terminal only — no UI.</div></div>
-        <div class="mitem"><span class="mstone m2">M2</span><div><b>Mobile shell</b>Screens render, navigation works, live feed streams. Agent is hardcoded.</div></div>
-        <div class="mitem"><span class="mstone m3">M3</span><div><b>Human in the loop</b>Claude reasoning + Approve/Deny prompts + the Kill Switch actually halts.</div></div>
-        <div class="mitem"><span class="mstone m4">M4</span><div><b>Polish</b>Final Report layout, animations, Export/Share, demo video.</div></div>
+        <div class="mitem"><span class="mstone m2">M2</span><div><b>Web app (done)</b>Single-page web UI at localhost:8080, live SSE feed, policy min/max, kill switch, Result panel, fee, persistent log. Now scaffolded for multi-chain + AI model gateway + credits. Agent still deterministic.</div></div>
+        <div class="mitem"><span class="mstone m3">M3</span><div><b>Human in the loop + real AI</b>Wire the model gateway into a reasoning loop, Approve/Deny modal, per-chain adapters (Solana/Base) made real, credits metering.</div></div>
+        <div class="mitem"><span class="mstone m4">M4</span><div><b>Polish</b>Result layout, Export/Share, demo video, open-source the policy engine.</div></div>
       </div>
     </div>
 
     <div class="goal" id="goal">
       <div>
         <div class="gn">THE END-TO-END GOAL</div>
-        <div class="gt"><em>Question + budget</em> &nbsp;<span class="arrow">→</span>&nbsp; agent pays per use on XRPL &nbsp;<span class="arrow">→</span>&nbsp; <em>sourced report</em> with explorer-verifiable receipts.</div>
+        <div class="gt"><em>Question + budget</em> &nbsp;<span class="arrow">→</span>&nbsp; agent pays per use on XRPL <span style="color:var(--faint)">(Solana / Base next)</span> &nbsp;<span class="arrow">→</span>&nbsp; <em>sourced report</em> with explorer-verifiable receipts.</div>
       </div>
     </div>
   </header>
@@ -615,8 +627,9 @@
               <div class="stag"><span class="snum">STOP 2</span><span class="sname">Define + launch the task <span class="badge">S2 · DELEGATE</span></span></div>
               <p class="what">The person writes the research question, sets the <em>total allowance</em>, picks which paid services the agent may touch, and chooses a policy preset (caps + approval threshold). <em>Then launches.</em></p>
               <div class="actions">
-                <div class="action money">Budget slider <span class="mstone m2">M2</span><small>Total RLUSD the agent may draw for this task.</small><span class="goesto">→ <b>writes the allowance into the policy engine</b></span></div>
-                <div class="action nav">Choose services <span class="mstone m2">M2</span><small>Per-task allowlist — the agent may pay no one else.</small><span class="goesto">→ <b>stays on this screen</b></span></div>
+                <div class="action money">Min / Max policy band <span class="mstone m2">M2</span><small>Auto-pay ≤ min, block &gt; max — written straight into the policy engine.</small><span class="goesto">→ <b>writes the allowance into the policy engine</b></span></div>
+                <div class="action nav">Settlement chain <span class="mstone m2">M2</span><small>XRPL live; Solana / Base shown as "soon" until their adapter lands.</small><span class="goesto">→ <b>routes the payment via that chain's adapter</b></span></div>
+                <div class="action nav">AI model <span class="mstone m2">M2</span><small>Pick from the gateway catalog (any provider); billed from credits or BYOK.</small><span class="goesto">→ <b>used by the M3 reasoning step</b></span></div>
                 <div class="action go">Launch Agent <span class="mstone m2">M2</span><small>Earmarks the allowance, starts the loop, opens the live channel.</small><span class="goesto">→ <b>S3 Live Run</b></span></div>
                 <div class="action nav">Save as draft <span class="mstone m2">M2</span><small>Persists the task without starting it.</small><span class="goesto">→ <b>S1 Dashboard</b></span></div>
               </div>
@@ -849,7 +862,7 @@
           <p>The <em>policy engine's settings</em>. Changing anything here writes new rules the engine consults from the next payment request on. Editable mid-run.</p>
           <div class="actions">
             <div class="action go">Save policy <span class="mstone m2">M2</span><small>Writes the rules the engine consults on every payment.</small><span class="goesto">→ <b>back to previous screen · takes effect immediately</b></span></div>
-            <div class="action money">Top up allowance <span class="mstone m2">M2</span><small>Funds the agent wallet from the testnet faucet.</small><span class="goesto">→ <b>balance updates on XRPL</b></span></div>
+            <div class="action money">Top up allowance <span class="mstone m2">M2</span><small>Funds the user's <em>own</em> agent wallet (testnet faucet now; their deposit later). Non-custodial — Leash never holds it.</small><span class="goesto">→ <b>balance updates on-chain</b></span></div>
             <div class="action money">Reset budget <span class="mstone m2">M2</span><small>Zeroes the spend counter for a new run.</small></div>
           </div>
         </div>

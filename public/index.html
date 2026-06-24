@@ -9,178 +9,413 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0E1116; --panel:#151B23; --panel-2:#1B232E; --raised:#212B38;
-    --line:#2A333F; --line-soft:#222B36;
-    --text:#E8EDF4; --muted:#94A2B3; --faint:#647183;
+    --ink:#0B0E13; --panel:#141A22; --panel-2:#1B232E; --raised:#212B38;
+    --line:#28323E; --line-soft:#1F2832;
+    --text:#EAF0F7; --muted:#94A2B3; --faint:#5F6C7D;
     --gold:#E8B23A; --gold-dim:#3a2f16;
     --green:#41C46B; --green-dim:#16301f;
     --red:#EB5757; --red-dim:#341a1c;
     --blue:#5C9CFF; --blue-dim:#16243f;
-    --radius:14px;
+    --radius:18px;
+    --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -24px rgba(0,0,0,.8);
+    --card-bg:linear-gradient(180deg, #1A222D 0%, #141A22 100%);
   }
   *{box-sizing:border-box;}
   body{margin:0; background:var(--ink); color:var(--text);
-    font-family:'Inter',system-ui,sans-serif; line-height:1.5;
-    font-size:15px;
-    background-image:radial-gradient(900px 500px at 78% -8%, rgba(92,156,255,.07), transparent 60%),
-                     radial-gradient(700px 400px at 8% 0%, rgba(232,178,58,.06), transparent 55%);
+    font-family:'Inter',system-ui,sans-serif; line-height:1.55;
+    font-size:15px; -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(1100px 560px at 82% -12%, rgba(92,156,255,.10), transparent 60%),
+      radial-gradient(820px 460px at 2% -4%, rgba(232,178,58,.08), transparent 55%),
+      radial-gradient(700px 700px at 100% 100%, rgba(65,196,107,.04), transparent 60%);
+    background-attachment:fixed;
     min-height:100vh;}
-  .wrap{max-width:1180px; margin:0 auto; padding:0 22px 90px;}
+  .wrap{max-width:1200px; margin:0 auto; padding:0 24px 90px;}
 
   /* header */
-  header{display:flex; align-items:center; gap:16px; padding:18px 0;
-    border-bottom:1px solid var(--line-soft); margin-bottom:24px; flex-wrap:wrap;}
-  .mark{font-family:'Space Grotesk'; font-weight:700; font-size:22px; letter-spacing:-.01em;}
+  header{display:flex; align-items:center; gap:14px; padding:20px 0 18px; flex-wrap:wrap;
+    position:sticky; top:0; z-index:20;
+    background:linear-gradient(180deg, rgba(11,14,19,.92) 60%, rgba(11,14,19,0));
+    backdrop-filter:blur(8px); margin-bottom:8px;}
+  .mark{font-family:'Space Grotesk'; font-weight:700; font-size:23px; letter-spacing:-.02em;
+    display:flex; align-items:center; gap:9px;}
+  .mark .glyph{width:26px; height:26px; border-radius:8px; display:grid; place-items:center;
+    background:linear-gradient(140deg, var(--gold), #b07f1d); color:#0B0E13; font-size:15px;
+    box-shadow:0 4px 14px -4px rgba(232,178,58,.6);}
   .mark .dot{color:var(--gold);}
-  .tag{font-family:'JetBrains Mono'; font-size:11px; padding:3px 8px; border-radius:999px;
-    background:var(--blue-dim); color:var(--blue); margin-left:4px; letter-spacing:.08em;}
-  .status{font-family:'JetBrains Mono'; font-size:12px; padding:5px 11px; border-radius:999px;
-    background:var(--line); color:var(--muted); letter-spacing:.06em;}
-  .status.working{background:var(--green-dim); color:var(--green);}
-  .status.halted{background:var(--red-dim); color:var(--red);}
-  .status .dot{display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:6px; background:currentColor;}
+  .tag{font-family:'JetBrains Mono'; font-size:10.5px; padding:4px 9px; border-radius:999px;
+    background:var(--blue-dim); color:var(--blue); letter-spacing:.08em;
+    border:1px solid rgba(92,156,255,.2);}
+  .status{font-family:'JetBrains Mono'; font-size:12px; padding:6px 12px; border-radius:999px;
+    background:var(--panel-2); color:var(--muted); letter-spacing:.06em; border:1px solid var(--line);}
+  .status.working{background:var(--green-dim); color:var(--green); border-color:rgba(65,196,107,.3);}
+  .status.halted{background:var(--red-dim); color:var(--red); border-color:rgba(235,87,87,.35);}
+  .status .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:7px;
+    background:currentColor; vertical-align:middle;}
+  .status.working .dot{animation:pulse 1.2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(65,196,107,.5);}50%{box-shadow:0 0 0 5px rgba(65,196,107,0);}}
   header .spacer{flex:1;}
-  .kill-btn{font-family:'JetBrains Mono'; font-size:12px; padding:7px 12px; border-radius:8px;
-    background:transparent; color:var(--red); border:1px solid var(--red-dim); cursor:pointer;
-    letter-spacing:.04em;}
-  .kill-btn:hover{background:var(--red-dim);}
-  .kill-btn.active{background:var(--red); color:#0E1116; border-color:var(--red);}
+  .kill-btn{font-family:'JetBrains Mono'; font-size:12px; padding:8px 14px; border-radius:10px;
+    background:rgba(235,87,87,.08); color:var(--red); border:1px solid rgba(235,87,87,.25);
+    cursor:pointer; letter-spacing:.04em; transition:all .15s;}
+  .kill-btn:hover{background:var(--red-dim); border-color:var(--red);}
+  .kill-btn.active{background:var(--red); color:#0B0E13; border-color:var(--red);
+    box-shadow:0 6px 20px -6px rgba(235,87,87,.7);}
+
+  /* hero */
+  .hero{padding:34px 0 30px; max-width:760px;}
+  .hero h1{font-family:'Space Grotesk'; font-weight:700; font-size:clamp(30px,5vw,46px);
+    line-height:1.05; letter-spacing:-.03em; margin:0 0 16px;
+    background:linear-gradient(180deg, #FFFFFF, #B9C6D6); -webkit-background-clip:text;
+    background-clip:text; color:transparent;}
+  .hero h1 em{font-style:normal; background:linear-gradient(120deg, var(--gold), #f3cf7d);
+    -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .hero p{font-size:16px; color:var(--muted); margin:0; max-width:620px;}
+  .pills{display:flex; gap:10px; flex-wrap:wrap; margin-top:22px;}
+  .pill{font-family:'JetBrains Mono'; font-size:11.5px; color:var(--muted);
+    padding:7px 12px; border-radius:999px; background:rgba(255,255,255,.03);
+    border:1px solid var(--line); display:flex; align-items:center; gap:7px;}
+  .pill b{color:var(--text); font-weight:600;}
+  .pill .led{width:6px; height:6px; border-radius:50%;}
+  .pill .led.g{background:var(--green);} .pill .led.b{background:var(--blue);} .pill .led.gd{background:var(--gold);}
 
   /* grid */
-  .grid{display:grid; grid-template-columns:340px 1fr; gap:22px; align-items:start;}
-  @media (max-width:880px){ .grid{grid-template-columns:1fr;} }
+  .grid{display:grid; grid-template-columns:360px 1fr; gap:24px; align-items:start;}
+  @media (max-width:920px){ .grid{grid-template-columns:1fr;} }
+  .col-left{position:sticky; top:84px;}
+  @media (max-width:920px){ .col-left{position:static;} }
 
-  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
-    padding:20px 22px;}
-  .card h2{font-family:'Space Grotesk'; font-weight:600; font-size:16px; margin:0 0 6px;
-    letter-spacing:-.005em; display:flex; align-items:center; gap:8px;}
-  .card h2 .badge{font-family:'JetBrains Mono'; font-size:10px; padding:2px 6px;
-    border-radius:5px; letter-spacing:.08em; font-weight:600;
-    background:var(--blue-dim); color:var(--blue);}
-  .card h2 .badge.m3{background:var(--green-dim); color:var(--green);}
-  .card p.lead{font-size:13px; color:var(--muted); margin:0 0 14px; line-height:1.5;}
-  .card + .card{margin-top:16px;}
+  .card{background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius);
+    padding:22px 24px; box-shadow:var(--shadow); position:relative; overflow:hidden;
+    transition:border-color .2s, transform .2s;}
+  .card::before{content:""; position:absolute; inset:0 0 auto 0; height:1px;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);}
+  .card.accent-gold::after{content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background:linear-gradient(180deg, var(--gold), transparent);}
+  .card.accent-green::after{content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background:linear-gradient(180deg, var(--green), transparent);}
+  .card[hidden]{display:none;}
+
+  /* result panel */
+  .result-card{animation:slidein .4s cubic-bezier(.2,.8,.2,1) both;}
+  .deliverable{background:rgba(11,14,19,.55); border:1px solid var(--line);
+    border-radius:13px; padding:14px 16px; margin-bottom:14px;}
+  .deliverable .d-q{font-family:'JetBrains Mono'; font-size:11px; color:var(--faint);
+    letter-spacing:.04em; margin-bottom:10px;}
+  .deliverable .d-q b{color:var(--text);}
+  .deliverable ol{margin:0; padding-left:20px; color:var(--text); font-size:14px;}
+  .deliverable ol li{margin-bottom:8px; line-height:1.5;}
+  .deliverable ol li::marker{color:var(--gold); font-family:'JetBrains Mono'; font-size:12px;}
+  .cost-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(92px,1fr)); gap:10px; margin:0 0 14px;}
+  .cost-tile{background:rgba(11,14,19,.6); border:1px solid var(--line);
+    border-radius:11px; padding:11px 12px;}
+  .cost-tile .ct-k{font-family:'JetBrains Mono'; font-size:9.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--faint); margin-bottom:5px;}
+  .cost-tile .ct-v{font-family:'JetBrains Mono'; font-size:14px; color:var(--text);}
+  .cost-tile .ct-v.gold{color:var(--gold);} .cost-tile .ct-v.green{color:var(--green);}
+  .result-actions{display:flex; gap:9px; flex-wrap:wrap;}
+  .result-tx{font-family:'JetBrains Mono'; font-size:11.5px; color:var(--faint);
+    margin-top:12px; word-break:break-all;}
+  .result-tx code{color:var(--gold);}
+  .card h2{font-family:'Space Grotesk'; font-weight:600; font-size:17px; margin:0 0 6px;
+    letter-spacing:-.01em; display:flex; align-items:center; gap:9px;}
+  .card h2 .badge{font-family:'JetBrains Mono'; font-size:9.5px; padding:3px 7px;
+    border-radius:6px; letter-spacing:.08em; font-weight:600;
+    background:var(--blue-dim); color:var(--blue); border:1px solid rgba(92,156,255,.2);}
+  .card h2 .badge.m3{background:var(--green-dim); color:var(--green); border-color:rgba(65,196,107,.25);}
+  .card p.lead{font-size:13px; color:var(--muted); margin:0 0 16px; line-height:1.55;}
+  .card + .card{margin-top:18px;}
 
   /* form rows */
-  label{display:block; font-family:'JetBrains Mono'; font-size:11px; letter-spacing:.1em;
-    text-transform:uppercase; color:var(--faint); margin:14px 0 6px;}
-  input[type="text"], input[type="password"]{width:100%; padding:11px 13px;
-    background:var(--ink); border:1px solid var(--line); border-radius:8px;
+  label{display:block; font-family:'JetBrains Mono'; font-size:10.5px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--faint); margin:16px 0 7px;}
+  input[type="text"], input[type="password"]{width:100%; padding:13px 15px;
+    background:rgba(11,14,19,.7); border:1px solid var(--line); border-radius:12px;
     color:var(--text); font-family:'Inter'; font-size:14px; outline:none;
-    transition:border-color .15s;}
-  input:focus{border-color:var(--blue);}
+    transition:border-color .15s, box-shadow .15s;}
+  input:focus{border-color:var(--blue); box-shadow:0 0 0 3px rgba(92,156,255,.15);}
   input::placeholder{color:var(--faint);}
 
-  .btn-row{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
-  .btn{font-family:'JetBrains Mono'; font-size:12.5px; padding:9px 14px; border-radius:8px;
+  .btn-row{display:flex; gap:9px; margin-top:14px; flex-wrap:wrap;}
+  .btn{font-family:'JetBrains Mono'; font-size:12.5px; padding:10px 15px; border-radius:11px;
     border:1px solid var(--line); background:var(--panel-2); color:var(--text); cursor:pointer;
-    letter-spacing:.04em; transition:transform .08s, background .15s;}
+    letter-spacing:.04em; transition:transform .1s, background .15s, box-shadow .15s;}
   .btn:hover:not(:disabled){transform:translateY(-1px);}
   .btn:active:not(:disabled){transform:translateY(0);}
-  .btn:disabled{opacity:.5; cursor:not-allowed;}
-  .btn.green{background:var(--green-dim); color:var(--green); border-color:var(--green-dim);}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+  .btn.green{background:var(--green-dim); color:var(--green); border-color:rgba(65,196,107,.25);}
   .btn.green:hover:not(:disabled){background:rgba(65,196,107,.18);}
-  .btn.red{background:var(--red-dim); color:var(--red); border-color:var(--red-dim);}
+  .btn.red{background:var(--red-dim); color:var(--red); border-color:rgba(235,87,87,.25);}
   .btn.red:hover:not(:disabled){background:rgba(235,87,87,.18);}
-  .btn.gold{background:var(--gold-dim); color:var(--gold); border-color:var(--gold-dim);}
-  .btn.blue{background:var(--blue-dim); color:var(--blue); border-color:var(--blue-dim);}
-  .btn.big{padding:13px 22px; font-size:14px;}
+  .btn.gold{background:var(--gold-dim); color:var(--gold); border-color:rgba(232,178,58,.25);}
+  .btn.blue{background:var(--blue-dim); color:var(--blue); border-color:rgba(92,156,255,.25);}
+  .btn.blue:hover:not(:disabled){background:rgba(92,156,255,.18);}
+  .btn.big{padding:14px 22px; font-size:14px;}
   .btn.full{width:100%;}
+  .btn.launch{width:100%; justify-content:center; color:#0B0E13; font-weight:700;
+    background:linear-gradient(135deg, #4dd47a, #34a85c); border:none;
+    box-shadow:0 10px 28px -10px rgba(65,196,107,.6); font-size:14px; padding:15px 22px;}
+  .btn.launch:hover:not(:disabled){box-shadow:0 14px 34px -10px rgba(65,196,107,.75);}
+  .btn.launch:disabled{background:var(--panel-2); color:var(--muted); box-shadow:none;}
+
+  /* provider segmented control */
+  .seg{display:grid; grid-template-columns:repeat(2,1fr); gap:7px; margin-top:4px;}
+  .seg button{font-family:'JetBrains Mono'; font-size:12px; padding:9px 10px; border-radius:10px;
+    border:1px solid var(--line); background:rgba(11,14,19,.5); color:var(--muted); cursor:pointer;
+    letter-spacing:.02em; transition:all .15s; display:flex; align-items:center; justify-content:center;
+    gap:7px; position:relative;}
+  .seg button:hover{color:var(--text); border-color:var(--faint);}
+  .seg button[aria-pressed="true"]{background:var(--blue-dim); color:var(--blue);
+    border-color:rgba(92,156,255,.4); box-shadow:0 0 0 1px rgba(92,156,255,.25) inset;}
+  .seg button .has{width:6px; height:6px; border-radius:50%; background:var(--green);
+    box-shadow:0 0 8px rgba(65,196,107,.7); display:none;}
+  .seg button.saved .has{display:inline-block;}
+
+  /* model select + credits */
+  select{width:100%; padding:12px 14px; background:rgba(11,14,19,.7); border:1px solid var(--line);
+    border-radius:12px; color:var(--text); font-family:'Inter'; font-size:14px; outline:none;
+    cursor:pointer; transition:border-color .15s, box-shadow .15s;
+    appearance:none; -webkit-appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,var(--faint) 50%),linear-gradient(135deg,var(--faint) 50%,transparent 50%);
+    background-position:calc(100% - 18px) center,calc(100% - 13px) center;
+    background-size:5px 5px,5px 5px; background-repeat:no-repeat;}
+  select:focus{border-color:var(--blue); box-shadow:0 0 0 3px rgba(92,156,255,.15);}
+  select option{background:var(--panel-2); color:var(--text);}
+  .credits{font-family:'JetBrains Mono'; font-size:12px; padding:10px 12px; border-radius:10px;
+    background:rgba(232,178,58,.06); border:1px solid rgba(232,178,58,.2); color:var(--gold);
+    margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .credits.byok{background:rgba(92,156,255,.06); border-color:rgba(92,156,255,.2); color:var(--blue);}
+  .credits .sub{color:var(--faint);}
+  /* chain segmented "soon" */
+  .seg button[disabled]{opacity:.45; cursor:not-allowed;}
+  .seg button .soon{font-size:8.5px; color:var(--faint); margin-left:5px; letter-spacing:.06em;}
 
   /* BYOK status */
-  .byok-status{font-family:'JetBrains Mono'; font-size:12px; margin-top:12px;
-    padding:8px 10px; border-radius:6px; background:var(--ink); color:var(--muted);
-    border:1px solid var(--line);}
-  .byok-status.set{color:var(--green); border-color:var(--green-dim);}
+  .byok-status{font-family:'JetBrains Mono'; font-size:11.5px; margin-top:13px;
+    padding:10px 12px; border-radius:10px; background:rgba(11,14,19,.6); color:var(--muted);
+    border:1px solid var(--line); line-height:1.5;}
+  .byok-status.set{color:var(--green); border-color:rgba(65,196,107,.25); background:rgba(65,196,107,.06);}
 
   /* policy display */
-  .kv{display:flex; justify-content:space-between; padding:6px 0;
+  .kv{display:flex; justify-content:space-between; align-items:center; padding:9px 0;
     font-family:'JetBrains Mono'; font-size:12.5px; border-bottom:1px solid var(--line-soft);}
   .kv:last-child{border-bottom:none;}
   .kv .k{color:var(--faint);}
-  .kv .v{color:var(--text);}
-  .kv .v.gold{color:var(--gold);}
+  .kv .v{color:var(--text); text-align:right;}
+  .kv .v.gold{color:var(--gold); font-weight:600;}
   .kv .v.mono{font-size:11.5px;}
+  /* policy min/max inputs */
+  .policy-inputs{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:6px 0 14px;}
+  .policy-inputs .field label{margin:0 0 6px;}
+  .policy-inputs .input-xrp{position:relative;}
+  .policy-inputs input[type="number"]{width:100%; padding:11px 44px 11px 13px;
+    background:rgba(11,14,19,.7); border:1px solid var(--line); border-radius:12px;
+    color:var(--text); font-family:'JetBrains Mono'; font-size:14px; outline:none;
+    transition:border-color .15s, box-shadow .15s; -moz-appearance:textfield;}
+  .policy-inputs input[type="number"]::-webkit-outer-spin-button,
+  .policy-inputs input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+  .policy-inputs input:focus{border-color:var(--gold); box-shadow:0 0 0 3px rgba(232,178,58,.15);}
+  .policy-inputs .field.min input:focus{border-color:var(--green); box-shadow:0 0 0 3px rgba(65,196,107,.15);}
+  .policy-inputs .field.max input:focus{border-color:var(--red); box-shadow:0 0 0 3px rgba(235,87,87,.15);}
+  .policy-inputs .unit{position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    font-family:'JetBrains Mono'; font-size:11px; color:var(--faint); pointer-events:none;}
+
+  /* autonomy band (live, per-payment) */
+  .band{margin:2px 0 16px;}
+  .band .band-head{display:flex; justify-content:space-between; font-family:'JetBrains Mono';
+    font-size:10.5px; letter-spacing:.08em; color:var(--faint); margin-bottom:8px;}
+  .band .track{height:11px; border-radius:999px; overflow:hidden; display:flex;
+    background:rgba(11,14,19,.85); border:1px solid var(--line);}
+  .band .track > span{height:100%; transition:width .18s ease;}
+  .band .seg-auto{background:linear-gradient(90deg, #2f9e57, var(--green));}
+  .band .seg-ask{background:linear-gradient(90deg, #b8862a, var(--gold));}
+  .band .seg-block{background:linear-gradient(90deg, #b34141, var(--red));}
+  .band .band-legend{display:flex; gap:13px; margin-top:9px; font-family:'JetBrains Mono';
+    font-size:10.5px; color:var(--muted); flex-wrap:wrap;}
+  .band .band-legend span{display:flex; align-items:center; gap:6px;}
+  .band .band-legend i{width:8px; height:8px; border-radius:2px;}
+  .band .band-warn{margin-top:8px; font-family:'JetBrains Mono'; font-size:10.5px;
+    color:var(--red); display:none;}
+  .band.invalid .band-warn{display:block;}
+
+  /* budget meter */
+  .budget-cap{margin:4px 0 14px;}
+  .budget-cap .label{display:flex; justify-content:space-between; font-family:'JetBrains Mono';
+    font-size:11px; color:var(--faint); margin-bottom:7px; letter-spacing:.04em;}
+  .budget-cap .amt{color:var(--gold); font-size:18px; font-weight:600;}
+  .meter{height:9px; border-radius:999px; background:rgba(11,14,19,.8);
+    border:1px solid var(--line); position:relative; overflow:hidden;}
+  .meter > span{position:absolute; top:0; bottom:0; left:0; border-radius:999px;
+    background:linear-gradient(90deg, var(--gold), #f3cf7d);}
+  .meter-legend{display:flex; gap:14px; margin-top:9px; font-family:'JetBrains Mono';
+    font-size:10.5px; color:var(--faint); flex-wrap:wrap;}
+  .meter-legend span{display:flex; align-items:center; gap:6px;}
+  .meter-legend i{width:8px; height:8px; border-radius:2px; display:inline-block;}
 
   /* security note */
-  .secnote{background:var(--red-dim); border:1px solid var(--red-dim);
-    border-radius:8px; padding:11px 13px; margin-top:14px; font-size:12.5px; color:var(--text);
-    line-height:1.5;}
+  .secnote{background:rgba(235,87,87,.07); border:1px solid rgba(235,87,87,.22);
+    border-radius:12px; padding:12px 14px; margin-top:16px; font-size:12.5px; color:var(--muted);
+    line-height:1.55;}
   .secnote b{color:var(--red); font-weight:600;}
+  .secnote a{color:var(--text); text-decoration:underline; text-underline-offset:2px;}
+  .secnote a:hover{color:var(--blue);}
+  .secnote code{font-family:'JetBrains Mono'; font-size:11px; color:var(--gold);
+    background:rgba(232,178,58,.08); padding:1px 5px; border-radius:4px;}
+  .secnote .ex{display:block; margin-top:8px; color:var(--faint); font-size:11.5px;}
 
-  /* stream */
-  .stream{display:flex; flex-direction:column; gap:8px; max-height:600px; overflow-y:auto;
-    padding-right:6px;}
-  .stream:empty::before{content:"No events yet. Launch a task to start streaming.";
-    color:var(--faint); font-family:'JetBrains Mono'; font-size:12px; padding:20px 0;
+  /* stream (timeline) */
+  .stream{display:flex; flex-direction:column; max-height:620px; overflow-y:auto;
+    padding:4px 6px 4px 6px; position:relative;}
+  .stream::-webkit-scrollbar{width:8px;}
+  .stream::-webkit-scrollbar-thumb{background:var(--line); border-radius:8px;}
+  .log-clear{font-family:'JetBrains Mono'; font-size:10.5px; padding:4px 9px; border-radius:8px;
+    background:transparent; color:var(--faint); border:1px solid var(--line); cursor:pointer;
+    letter-spacing:.04em; transition:all .15s;}
+  .log-clear:hover{color:var(--red); border-color:rgba(235,87,87,.3);}
+  .log-divider{position:relative; margin:14px 0 16px 24px; text-align:center;
+    font-family:'JetBrains Mono'; font-size:10px; color:var(--faint); letter-spacing:.1em;}
+  .log-divider::before{content:""; position:absolute; left:0; right:0; top:50%; height:1px;
+    background:var(--line);}
+  .log-divider span{position:relative; background:var(--panel); padding:0 10px;
+    text-transform:uppercase;}
+  .stream:empty{min-height:160px;}
+  .stream:empty::before{content:"⚡  No events yet — launch a task to start streaming the loop.";
+    color:var(--faint); font-family:'JetBrains Mono'; font-size:12.5px; padding:60px 20px;
     text-align:center; display:block;}
-  .event{background:var(--ink); border:1px solid var(--line); border-radius:10px;
-    padding:11px 14px; font-size:13.5px; line-height:1.5;
-    border-left-width:3px;}
-  .event.started{border-left-color:var(--blue); color:var(--text);}
-  .event.started b{color:var(--blue);}
-  .event.probing, .event.signing, .event.wallet_loaded{color:var(--muted);}
-  .event.challenge{border-left-color:var(--gold);}
-  .event.challenge b{color:var(--gold);}
-  .event.policy_decision{border-left-color:var(--green);}
-  .event.policy_decision.deny{border-left-color:var(--red);}
-  .event.policy_decision.ask_human{border-left-color:var(--gold);}
-  .event.settled{border-left-color:var(--green); background:rgba(65,196,107,.06);}
+  .event{position:relative; margin-left:24px; padding:12px 15px; font-size:13.5px;
+    line-height:1.55; background:rgba(11,14,19,.55); border:1px solid var(--line);
+    border-radius:13px; margin-bottom:12px;
+    animation:slidein .35s cubic-bezier(.2,.8,.2,1) both;}
+  @keyframes slidein{from{opacity:0; transform:translateY(8px);}to{opacity:1; transform:translateY(0);}}
+  /* timeline rail + node */
+  .event::before{content:""; position:absolute; left:-19px; top:18px; bottom:-24px; width:2px;
+    background:var(--line);}
+  .event:last-child::before{display:none;}
+  .event::after{content:""; position:absolute; left:-24px; top:14px; width:12px; height:12px;
+    border-radius:50%; background:var(--ink); border:2px solid var(--accent, var(--faint));
+    box-shadow:0 0 0 3px rgba(11,14,19,1);}
+  .event.started{--accent:var(--blue);} .event.started b{color:var(--blue);}
+  .event.probing, .event.signing, .event.wallet_loaded{color:var(--muted); --accent:var(--faint);}
+  .event.challenge{--accent:var(--gold);} .event.challenge b{color:var(--gold);}
+  .event.policy_decision{--accent:var(--green);}
+  .event.policy_decision.deny{--accent:var(--red);}
+  .event.policy_decision.ask_human{--accent:var(--gold);}
+  .event.settled{--accent:var(--green); background:rgba(65,196,107,.07); border-color:rgba(65,196,107,.25);}
   .event.settled b{color:var(--green);}
-  .event.unlocked{border-left-color:var(--gold); background:rgba(232,178,58,.05);}
+  .event.settled::after{box-shadow:0 0 0 3px rgba(11,14,19,1), 0 0 16px rgba(65,196,107,.6);}
+  .event.unlocked{--accent:var(--gold); background:rgba(232,178,58,.06); border-color:rgba(232,178,58,.22);}
   .event.unlocked b{color:var(--gold);}
-  .event.complete{border-left-color:var(--green); color:var(--green); font-family:'JetBrains Mono'; font-size:12px;}
-  .event.error{border-left-color:var(--red); background:var(--red-dim); color:var(--red);}
+  .event.complete{--accent:var(--green); color:var(--green); font-family:'JetBrains Mono'; font-size:12px;}
+  .event.error{--accent:var(--red); background:var(--red-dim); color:var(--red); border-color:rgba(235,87,87,.3);}
   .event code{font-family:'JetBrains Mono'; font-size:12px; color:var(--gold);
-    background:rgba(232,178,58,.08); padding:1px 5px; border-radius:3px;
+    background:rgba(232,178,58,.08); padding:2px 6px; border-radius:5px;
     word-break:break-all;}
   .event .row{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;}
-  .event ul{margin:6px 0 0; padding-left:18px; color:var(--muted); font-size:13px;}
-  .event ul li{margin-bottom:4px;}
-  .event .explorer{margin-top:10px; display:inline-block;}
+  .event ul{margin:8px 0 0; padding-left:18px; color:var(--muted); font-size:13px;}
+  .event ul li{margin-bottom:5px;}
+  .event .explorer{margin-top:12px; display:inline-block;}
 
-  .footer-note{margin-top:30px; padding-top:20px; border-top:1px solid var(--line-soft);
+  /* wallet panel */
+  .wallet-row{display:flex; justify-content:space-between; align-items:center; padding:8px 0;
+    font-family:'JetBrains Mono'; font-size:12.5px; border-bottom:1px solid var(--line-soft);}
+  .wallet-row:last-of-type{border-bottom:none;}
+  .wallet-row .k{color:var(--faint);}
+  .wallet-row .v{color:var(--text);}
+  .wallet-row .v.gold{color:var(--gold); font-weight:600; font-size:15px;}
+  .wallet-row .v.addr{font-size:11px; word-break:break-all; text-align:right; max-width:60%;}
+
+  /* approval modal */
+  .modal-overlay{position:fixed; inset:0; z-index:100; display:flex; align-items:center;
+    justify-content:center; padding:24px; background:rgba(6,9,13,.74); backdrop-filter:blur(5px);
+    animation:fade .2s ease both;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal-overlay[hidden]{display:none;}
+  .modal{width:min(440px,100%); background:var(--card-bg); border:1px solid var(--line);
+    border-radius:18px; padding:24px; box-shadow:0 30px 80px -20px rgba(0,0,0,.9);
+    animation:slidein .28s cubic-bezier(.2,.8,.2,1) both; position:relative; overflow:hidden;}
+  .modal::before{content:""; position:absolute; left:0; right:0; top:0; height:3px;
+    background:linear-gradient(90deg,var(--gold),transparent);}
+  .modal-badge{font-family:'JetBrains Mono'; font-size:10.5px; letter-spacing:.1em; color:var(--gold);}
+  .modal h3{font-family:'Space Grotesk'; font-weight:600; font-size:20px; margin:10px 0 6px;}
+  .modal-reason{color:var(--muted); font-size:13.5px; margin:0 0 16px;}
+  .modal-kv{background:rgba(11,14,19,.6); border:1px solid var(--line); border-radius:12px;
+    padding:6px 14px; margin-bottom:18px;}
+  .modal-kv > div{display:flex; justify-content:space-between; align-items:center; gap:12px;
+    padding:9px 0; border-bottom:1px solid var(--line-soft); font-family:'JetBrains Mono'; font-size:12.5px;}
+  .modal-kv > div:last-child{border-bottom:none;}
+  .modal-kv span{color:var(--faint);}
+  .modal-kv b{color:var(--text); text-align:right; word-break:break-all;}
+  .modal-kv b.gold{color:var(--gold);} .modal-kv b.mono{font-size:11px;}
+  .modal-actions{display:grid; grid-template-columns:1fr 1.4fr; gap:10px;}
+  .modal-foot{margin-top:13px; font-family:'JetBrains Mono'; font-size:10.5px; color:var(--faint); text-align:center;}
+  .event.approval_request{--accent:var(--gold); background:rgba(232,178,58,.07); border-color:rgba(232,178,58,.25);}
+  .event.approval_resolved.approve{--accent:var(--green);} .event.approval_resolved.approve b{color:var(--green);}
+  .event.approval_resolved.deny{--accent:var(--red);} .event.approval_resolved.deny b{color:var(--red);}
+  .event.halted{--accent:var(--red); background:var(--red-dim); color:var(--red);}
+  .event.thinking{--accent:var(--blue); color:var(--muted); font-style:italic;}
+
+  .footer-note{margin-top:34px; padding-top:22px; border-top:1px solid var(--line-soft);
     font-family:'JetBrains Mono'; font-size:11.5px; color:var(--faint); display:flex;
     gap:12px; flex-wrap:wrap; justify-content:space-between;}
-  .footer-note a{color:var(--faint); text-decoration:underline;}
+  .footer-note a{color:var(--muted); text-decoration:none; border-bottom:1px solid var(--line);}
+  .footer-note a:hover{color:var(--text);}
 
-  :focus-visible{outline:2px solid var(--gold); outline-offset:2px; border-radius:4px;}
+  :focus-visible{outline:2px solid var(--gold); outline-offset:2px; border-radius:6px;}
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <header>
-    <div class="mark">LEASH<span class="dot">.</span></div>
+    <div class="mark"><span class="glyph">⛓</span>LEASH<span class="dot">.</span></div>
     <span class="tag">M2 · web · BYOK</span>
     <div class="spacer"></div>
     <span class="status" id="status"><span class="dot"></span>IDLE</span>
     <button class="kill-btn" id="kill-btn" title="Kill switch">🛑 KILL</button>
   </header>
 
+  <section class="hero">
+    <h1>Put your AI agent on a&nbsp;<em>leash.</em></h1>
+    <p>Delegate a task and a budget. The agent pays per use to unlock data on XRPL — and the policy engine gates every signature, live, with a kill switch in your hand.</p>
+    <div class="pills">
+      <span class="pill"><i class="led b"></i>Settlement <b>XRPL testnet</b></span>
+      <span class="pill"><i class="led gd"></i>Money is <b>real on-chain</b></span>
+      <span class="pill"><i class="led g"></i>Control via <b>policy engine</b></span>
+    </div>
+  </section>
+
   <div class="grid">
 
     <!-- LEFT COLUMN: BYOK + policy -->
-    <div>
+    <div class="col-left">
       <div class="card">
-        <h2>Anthropic key <span class="badge">BYOK</span></h2>
-        <p class="lead">Used by the agent's reasoning step <b style="color:var(--text)">in M3</b>. Stored only in <b style="color:var(--text)">your browser's localStorage</b> — never on our server.</p>
-        <label for="byok-input">Key</label>
-        <input id="byok-input" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
-        <div class="btn-row">
-          <button class="btn green" id="byok-save">Save</button>
-          <button class="btn red" id="byok-forget">Forget</button>
-        </div>
-        <div class="byok-status" id="byok-status">No key saved.</div>
-        <div class="secnote">
-          <b>Security:</b> create a <em>new</em> key in the Anthropic Console with a small monthly spend cap ($5–$20). You can revoke it anytime. Worst case: the cap amount.
+        <h2>AI model <span class="badge" id="ai-mode-badge">BYOK</span></h2>
+        <p class="lead">Pick the model the agent reasons with <b style="color:var(--text)">in M3</b>. Many models via one gateway — billed from your credits, or BYOK.</p>
+        <div class="credits" id="credits"></div>
+        <label for="model-select">Model</label>
+        <select id="model-select"></select>
+        <div id="byok-block">
+          <label for="byok-input">Provider key <span style="text-transform:none;letter-spacing:0;color:var(--faint)">(BYOK — optional)</span></label>
+          <input id="byok-input" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
+          <div class="btn-row">
+            <button class="btn green" id="byok-save">Save</button>
+            <button class="btn red" id="byok-forget">Forget</button>
+          </div>
+          <div class="byok-status" id="byok-status">No key saved.</div>
+          <div class="secnote" id="byok-hint"></div>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Policy</h2>
-        <p class="lead">Read-only in M2. Every payment passes the six gates before any signature.</p>
+      <div class="card accent-gold">
+        <h2>Policy <span class="badge">6 GATES</span></h2>
+        <p class="lead">Set the agent's autonomy band. Payments <b style="color:var(--green)">at or under min</b> pay automatically; <b style="color:var(--red)">over max</b> are blocked; in between needs your approval.</p>
         <div id="policy"></div>
+      </div>
+
+      <div class="card">
+        <h2>Wallet <span class="badge m3">M3</span></h2>
+        <p class="lead">The agent's <b style="color:var(--text)">own</b> wallet — non-custodial; Leash never holds it. Fund it from the testnet faucet.</p>
+        <div id="wallet"></div>
       </div>
     </div>
 
@@ -188,17 +423,25 @@
     <div>
       <div class="card">
         <h2>Delegate a task</h2>
-        <p class="lead">The agent will pay per use to unlock paid research data on XRPL testnet, with the policy engine gating every payment.</p>
+        <p class="lead">The agent pays per use to unlock paid research data, with the policy engine gating every payment. Choose the settlement chain.</p>
+        <label>Settlement chain</label>
+        <div class="seg" id="chain-seg" role="group" aria-label="Settlement chain"></div>
         <label for="task-input">Query</label>
         <input id="task-input" type="text" placeholder="compare AI coding tools 2026" />
         <div class="btn-row">
-          <button class="btn green big" id="launch">▶ Launch Agent</button>
+          <button class="btn launch" id="launch">▶ Launch Agent</button>
         </div>
       </div>
 
+      <div class="card accent-green result-card" id="result-card" hidden>
+        <h2>Result <span class="badge m3">DELIVERABLE</span></h2>
+        <p class="lead">What the agent returned, and exactly what it spent on-chain to get it.</p>
+        <div id="result-body"></div>
+      </div>
+
       <div class="card">
-        <h2>Live feed</h2>
-        <p class="lead">One event per loop step — probe, policy decision, sign, settled, unlock. The <b style="color:var(--green)">TX SETTLED</b> bubble has a real explorer link.</p>
+        <h2>Live feed <span class="spacer" style="flex:1"></span><button class="log-clear" id="log-clear" title="Clear saved log">clear ✕</button></h2>
+        <p class="lead">Every loop step — probe, policy decision, sign, settled, unlock. History is kept across runs (last 200 events) and survives a reload.</p>
         <div id="stream" class="stream"></div>
       </div>
     </div>
@@ -208,6 +451,25 @@
   <div class="footer-note">
     <span>LEASH · M2 · web app</span>
     <span>see also <a href="leash_app_spec.html">full spec</a> · <a href="leash_user_journey.html">user journey</a> · <a href="leash_web_demo.html">walkthrough</a></span>
+  </div>
+</div>
+
+<!-- Approve/Deny modal — gate 6 made tactile (M3) -->
+<div class="modal-overlay" id="approval-overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="approval-title">
+    <div class="modal-badge">⏸ POLICY · APPROVAL REQUIRED</div>
+    <h3 id="approval-title">Approve this payment?</h3>
+    <p class="modal-reason" id="approval-reason"></p>
+    <div class="modal-kv">
+      <div><span>Amount</span><b id="approval-amount" class="gold">—</b></div>
+      <div><span>To</span><b id="approval-dest" class="mono">—</b></div>
+      <div><span>For</span><b id="approval-kind">—</b></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn red big" id="approval-deny">✕ Deny</button>
+      <button class="btn launch" id="approval-approve">✓ Approve &amp; sign</button>
+    </div>
+    <div class="modal-foot">No signature is produced until you choose. Auto-denies in 2&nbsp;min.</div>
   </div>
 </div>
 
@@ -221,58 +483,259 @@
   const byokInput = $("byok-input");
   const byokStatus = $("byok-status");
 
-  // ---------- BYOK (localStorage) ----------
-  const BYOK_KEY = "leash.anthropic_key";
-  function refreshByokStatus() {
-    const k = localStorage.getItem(BYOK_KEY);
-    if (k) {
-      byokStatus.textContent = "✓ Key saved in this browser (" + k.slice(0, 9) + "…). Never sent to Leash storage.";
-      byokStatus.classList.add("set");
-      byokInput.value = "";
-      byokInput.placeholder = "(key is saved — paste a new one to replace)";
-    } else {
-      byokStatus.textContent = "No key saved.";
-      byokStatus.classList.remove("set");
-      byokInput.placeholder = "sk-ant-…";
+  // ---------- AI model (gateway catalog) + BYOK keys ----------
+  const PROVIDER_META = {
+    anthropic: { label: "Anthropic", placeholder: "sk-ant-api03-…", console: "console.anthropic.com", url: "https://console.anthropic.com/settings/keys", limit: "set a Workspace spend limit" },
+    openai: { label: "OpenAI", placeholder: "sk-proj-…", console: "platform.openai.com", url: "https://platform.openai.com/api-keys", limit: "create a Restricted key + set a project budget limit" },
+    google: { label: "Google", placeholder: "AIzaSy…", console: "aistudio.google.com", url: "https://aistudio.google.com/apikey", limit: "restrict the key + set a Cloud quota/budget" },
+    "x-ai": { label: "xAI (Grok)", placeholder: "xai-…", console: "console.x.ai", url: "https://console.x.ai", limit: "set a team spend limit" },
+    meta: { label: "Meta / Llama", placeholder: "(gateway key)", console: "openrouter.ai", url: "https://openrouter.ai/keys", limit: "set a credit limit" },
+  };
+  function providerMeta(id) { return PROVIDER_META[id] || PROVIDER_META.anthropic; }
+  function providerOf(modelId) { return (modelId || "").split("/")[0] || "anthropic"; }
+
+  const KEYS_STORE = "leash.byok.keys";   // JSON map { provider: key }
+  const MODEL_STORE = "leash.model";      // selected gateway model id
+  const CHAIN_STORE = "leash.chain";      // selected settlement chain
+  const LEGACY_KEY = "leash.anthropic_key";
+
+  function getKeys() {
+    try { return JSON.parse(localStorage.getItem(KEYS_STORE) || "{}") || {}; }
+    catch { return {}; }
+  }
+  function setKeys(obj) { localStorage.setItem(KEYS_STORE, JSON.stringify(obj)); }
+  (function migrate() {
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy) {
+      const keys = getKeys();
+      if (!keys.anthropic) { keys.anthropic = legacy; setKeys(keys); }
+      localStorage.removeItem(LEGACY_KEY);
     }
+  })();
+
+  let selectedModel = localStorage.getItem(MODEL_STORE) || null;
+  let selectedChain = localStorage.getItem(CHAIN_STORE) || null;
+  let activeProvider = "anthropic";
+
+  function refreshByokStatus() {
+    const meta = providerMeta(activeProvider);
+    const k = getKeys()[activeProvider];
+    if (k) {
+      byokStatus.textContent = `✓ ${meta.label} key saved in this browser (${k.slice(0, 6)}…). Never sent to Leash storage.`;
+      byokStatus.classList.add("set");
+      byokInput.placeholder = "(saved — paste a new key to replace)";
+    } else {
+      byokStatus.textContent = `No ${meta.label} key saved.`;
+      byokStatus.classList.remove("set");
+      byokInput.placeholder = meta.placeholder;
+    }
+  }
+  function renderHint() {
+    const m = providerMeta(activeProvider);
+    $("byok-hint").innerHTML =
+      `<b>Use a limited key.</b> Create a <em>new</em> ${m.label} key at ` +
+      `<a href="${m.url}" target="_blank" rel="noopener">${m.console}</a>, ` +
+      `${m.limit} ($5–$20). Revoke anytime — worst case is the cap.` +
+      `<span class="ex">Looks like <code>${m.placeholder}</code> · the key stays in your browser, sent per-task, never stored on our server.</span>`;
   }
   $("byok-save").addEventListener("click", () => {
     const v = byokInput.value.trim();
     if (!v) return;
-    localStorage.setItem(BYOK_KEY, v);
-    refreshByokStatus();
+    const keys = getKeys(); keys[activeProvider] = v; setKeys(keys);
+    byokInput.value = ""; refreshByokStatus();
   });
   $("byok-forget").addEventListener("click", () => {
-    localStorage.removeItem(BYOK_KEY);
+    const keys = getKeys(); delete keys[activeProvider]; setKeys(keys);
     refreshByokStatus();
   });
-  refreshByokStatus();
 
-  // ---------- Kill switch ----------
+  // Model catalog from the gateway
+  async function loadModels() {
+    try {
+      const data = await fetch("/api/models").then((r) => r.json());
+      const models = data.models || [];
+      if (!selectedModel || !models.some((m) => m.id === selectedModel)) selectedModel = data.default || (models[0] && models[0].id);
+      $("model-select").innerHTML = models.map((m) =>
+        `<option value="${m.id}" ${m.id === selectedModel ? "selected" : ""}>${m.label} · ${m.provider}</option>`).join("");
+      activeProvider = providerOf(selectedModel);
+      refreshByokStatus(); renderHint();
+      $("model-select").addEventListener("change", (e) => {
+        selectedModel = e.target.value;
+        localStorage.setItem(MODEL_STORE, selectedModel);
+        activeProvider = providerOf(selectedModel);
+        byokInput.value = ""; refreshByokStatus(); renderHint();
+      });
+    } catch (e) { /* gateway unavailable */ }
+  }
+
+  // Prepaid credits (or BYOK mode)
+  async function loadCredits() {
+    try {
+      const c = await fetch("/api/credits").then((r) => r.json());
+      const el = $("credits"); const badge = $("ai-mode-badge");
+      if (c.enabled) {
+        el.classList.remove("byok");
+        el.innerHTML = `<span>Balance</span><span><b>${c.credits} credits</b> <span class="sub">($${(c.usdCents / 100).toFixed(2)})</span></span>`;
+        badge.textContent = "CREDITS";
+      } else {
+        el.classList.add("byok");
+        el.innerHTML = `<span>BYOK mode</span><span class="sub">bring your own key · credits off</span>`;
+        badge.textContent = "BYOK";
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  // Settlement chains
+  function chainLabel(c) { return c.id === "xrpl" ? "XRPL" : c.id.charAt(0).toUpperCase() + c.id.slice(1); }
+  async function loadChains() {
+    try {
+      const data = await fetch("/api/chains").then((r) => r.json());
+      const chains = data.chains || [];
+      if (!selectedChain || !chains.some((c) => c.id === selectedChain && c.enabled)) selectedChain = data.default;
+      const render = () => {
+        $("chain-seg").innerHTML = chains.map((c) =>
+          `<button type="button" data-chain="${c.id}" ${c.enabled ? "" : "disabled"} aria-pressed="${c.id === selectedChain}">` +
+          `${chainLabel(c)}${c.enabled ? "" : '<span class="soon">soon</span>'}</button>`).join("");
+        $("chain-seg").querySelectorAll("button:not([disabled])").forEach((b) => {
+          b.addEventListener("click", () => {
+            selectedChain = b.dataset.chain;
+            localStorage.setItem(CHAIN_STORE, selectedChain);
+            render();
+            if (typeof loadWallet === "function") loadWallet();
+          });
+        });
+      };
+      render();
+    } catch (e) { /* ignore */ }
+  }
+
+  loadModels();
+  loadCredits();
+  loadChains();
+
+  // ---------- Kill switch (wired through the server-side policy engine) ----------
   let halted = false;
-  killBtn.addEventListener("click", () => {
-    halted = !halted;
+  function paintHalt() {
     killBtn.classList.toggle("active", halted);
     statusEl.classList.toggle("halted", halted);
-    statusEl.classList.toggle("working", false);
-    statusEl.innerHTML = halted
-      ? '<span class="dot"></span>HALTED'
-      : '<span class="dot"></span>IDLE';
-  });
+    if (halted) statusEl.classList.remove("working");
+    statusEl.innerHTML = halted ? '<span class="dot"></span>HALTED' : '<span class="dot"></span>IDLE';
+  }
+  async function setHaltServer(v) {
+    halted = v;
+    paintHalt();
+    try {
+      const r = await fetch("/api/kill", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ halted: v }),
+      }).then((r) => r.json());
+      halted = !!r.halted; paintHalt();
+    } catch (e) { /* offline — local state still reflects intent */ }
+  }
+  killBtn.addEventListener("click", () => setHaltServer(!halted));
+  // Sync with the server's current halt state on load.
+  fetch("/api/kill").then((r) => r.json()).then((r) => { halted = !!r.halted; paintHalt(); }).catch(() => {});
+
+  // ---------- Wallet panel ----------
+  async function loadWallet() {
+    try {
+      const w = await fetch("/api/wallet?chain=" + encodeURIComponent(selectedChain || "xrpl")).then((r) => r.json());
+      if (w.error) { $("wallet").innerHTML = `<div class="wallet-row"><span class="k">status</span><span class="v">${escapeHtml(w.error)}</span></div>`; return; }
+      $("wallet").innerHTML =
+        `<div class="wallet-row"><span class="k">balance</span><span class="v gold">${escapeHtml(w.balance)} XRP</span></div>` +
+        `<div class="wallet-row"><span class="k">address</span><span class="v addr">${escapeHtml(w.address)}</span></div>` +
+        `<div class="btn-row"><button class="btn gold full" id="faucet-btn">⛲ Fund from testnet faucet</button></div>`;
+      $("faucet-btn").addEventListener("click", async () => {
+        const b = $("faucet-btn"); b.disabled = true; b.textContent = "⏳ funding…";
+        try { await fetch("/api/faucet?chain=" + encodeURIComponent(selectedChain || "xrpl"), { method: "POST" }); }
+        catch (e) { /* ignore */ }
+        await loadWallet();
+      });
+    } catch (e) {
+      $("wallet").innerHTML = `<div class="wallet-row"><span class="k">status</span><span class="v">wallet unavailable</span></div>`;
+    }
+  }
+  loadWallet();
 
   // ---------- Policy (fetched once) ----------
   function dropsToXrp(d) { return (Number(d) / 1_000_000).toFixed(6); }
+  let policyTotalDrops = null;      // captured for the result "budget left" figure
+  let runData = null;               // accumulates this run's deliverable + cost
+  const resultCard = $("result-card");
+  const resultBody = $("result-body");
   async function loadPolicy() {
     try {
       const p = await fetch("/api/policy").then((r) => r.json());
+      const total = Number(p.totalBudgetDrops) || 1;
+      policyTotalDrops = Number(p.totalBudgetDrops);
+      const pct = (d) => Math.min(100, (Number(d) / total) * 100).toFixed(1);
       $("policy").innerHTML = `
-        <div class="kv"><span class="k">Total budget</span><span class="v gold">${dropsToXrp(p.totalBudgetDrops)} XRP</span></div>
-        <div class="kv"><span class="k">Per-tx cap</span><span class="v">${dropsToXrp(p.perTxCapDrops)} XRP</span></div>
-        <div class="kv"><span class="k">Daily cap</span><span class="v">${dropsToXrp(p.dailyCapDrops)} XRP</span></div>
-        <div class="kv"><span class="k">Approval ≥</span><span class="v">${dropsToXrp(p.approvalThresholdDrops)} XRP</span></div>
-        <div class="kv"><span class="k">Network</span><span class="v">${p.network}</span></div>
+        <div class="policy-inputs">
+          <div class="field min">
+            <label for="policy-min">Min · auto-pay ≤</label>
+            <div class="input-xrp">
+              <input id="policy-min" type="number" min="0" step="0.001" value="${dropsToXrp(p.approvalThresholdDrops)}" />
+              <span class="unit">XRP</span>
+            </div>
+          </div>
+          <div class="field max">
+            <label for="policy-max">Max · block &gt;</label>
+            <div class="input-xrp">
+              <input id="policy-max" type="number" min="0" step="0.001" value="${dropsToXrp(p.perTxCapDrops)}" />
+              <span class="unit">XRP</span>
+            </div>
+          </div>
+        </div>
+        <div class="band" id="band">
+          <div class="band-head"><span>AUTONOMY BAND</span><span>per payment</span></div>
+          <div class="track">
+            <span class="seg-auto" id="seg-auto"></span>
+            <span class="seg-ask" id="seg-ask"></span>
+            <span class="seg-block" id="seg-block"></span>
+          </div>
+          <div class="band-legend">
+            <span><i style="background:var(--green)"></i>auto-pay ≤ <b id="b-min">–</b></span>
+            <span><i style="background:var(--gold)"></i>approval</span>
+            <span><i style="background:var(--red)"></i>block &gt; <b id="b-max">–</b></span>
+          </div>
+          <div class="band-warn">⚠ min should be ≤ max</div>
+        </div>
+        <div class="budget-cap">
+          <div class="label"><span>TOTAL BUDGET · lifetime</span><span>${p.network}</span></div>
+          <div class="amt">${dropsToXrp(p.totalBudgetDrops)} XRP</div>
+          <div class="meter">
+            <span style="width:100%;opacity:.18"></span>
+            <span style="width:${pct(p.dailyCapDrops)}%;opacity:.7"></span>
+          </div>
+          <div class="meter-legend">
+            <span><i style="background:rgba(232,178,58,.7)"></i>daily cap ${dropsToXrp(p.dailyCapDrops)} XRP</span>
+          </div>
+        </div>
         <div class="kv"><span class="k">Merchant</span><span class="v mono">${p.merchantPayTo.slice(0,8)}…${p.merchantPayTo.slice(-6)}</span></div>
+        <div class="kv"><span class="k">Leash fee</span><span class="v gold">${p.feeBps ? (p.feeBps / 100) + "% per payment" : "off"}</span></div>
       `;
+      // Live autonomy-band visualization, driven by the min/max inputs.
+      const fmt = (x) => String(Math.round(x * 1e6) / 1e6);
+      function renderBand() {
+        const minV = Math.max(0, parseFloat($("policy-min").value) || 0);
+        const maxV = Math.max(0, parseFloat($("policy-max").value) || 0);
+        const hi = Math.max(minV, maxV);
+        const end = hi > 0 ? hi * 1.3 : 1;
+        const autoEnd = Math.min(minV, maxV > 0 ? maxV : minV);
+        const askW = Math.max(0, maxV - autoEnd);
+        const greenPct = (autoEnd / end) * 100;
+        const goldPct = (askW / end) * 100;
+        const redPct = Math.max(0, 100 - greenPct - goldPct);
+        $("seg-auto").style.width = greenPct + "%";
+        $("seg-ask").style.width = goldPct + "%";
+        $("seg-block").style.width = redPct + "%";
+        $("b-min").textContent = fmt(minV);
+        $("b-max").textContent = fmt(maxV);
+        $("band").classList.toggle("invalid", minV > maxV && maxV > 0);
+      }
+      $("policy-min").addEventListener("input", renderBand);
+      $("policy-max").addEventListener("input", renderBand);
+      renderBand();
     } catch (e) {
       $("policy").textContent = "(policy unavailable — is the backend running?)";
     }
@@ -288,14 +751,177 @@
     stream.scrollTop = stream.scrollHeight;
     return div;
   }
-  function clearStream() { stream.innerHTML = ""; }
+  // ---------- Persistent log (bounded ring buffer in localStorage) ----------
+  const LOG_STORE = "leash.log";
+  const LOG_MAX = 200; // keep the page light no matter how many runs
+  let logItems = [];   // each item: an AgentEvent, or { __divider: "label" }
+
+  function saveLog() {
+    try { localStorage.setItem(LOG_STORE, JSON.stringify(logItems)); } catch (e) { /* quota */ }
+  }
+  function appendLog(item) {
+    logItems.push(item);
+    while (logItems.length > LOG_MAX) {
+      logItems.shift();
+      if (stream.firstChild) stream.removeChild(stream.firstChild); // keep DOM in sync
+    }
+    saveLog();
+  }
+  function renderDivider(label) {
+    const div = document.createElement("div");
+    div.className = "log-divider";
+    div.innerHTML = `<span>${escapeHtml(label)}</span>`;
+    stream.appendChild(div);
+    return div;
+  }
+  // Render one stored/streamed item to the DOM (no persistence side-effects).
+  function paint(item) {
+    if (item && item.__divider) renderDivider(item.__divider);
+    else render(item);
+  }
+  // Streamed event: paint it AND persist it.
+  function logEvent(e) { paint(e); appendLog(e); }
+  function startRunDivider(query) {
+    const ts = new Date().toLocaleTimeString();
+    const label = `run · "${query}" · ${ts}`;
+    renderDivider(label);
+    appendLog({ __divider: label });
+  }
+  function loadLog() {
+    try { logItems = JSON.parse(localStorage.getItem(LOG_STORE) || "[]") || []; }
+    catch (e) { logItems = []; }
+    if (logItems.length > LOG_MAX) logItems = logItems.slice(-LOG_MAX);
+    for (const it of logItems) paint(it); // replay without re-persisting
+    stream.scrollTop = stream.scrollHeight;
+  }
+  function clearLog() { logItems = []; saveLog(); stream.innerHTML = ""; }
+  $("log-clear").addEventListener("click", clearLog);
+  loadLog(); // replay persisted history on page load
 
   function escapeHtml(s) {
     return String(s ?? "")
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  // Accumulate the data the Result panel needs as events stream past.
+  function captureForResult(e) {
+    if (!runData) return;
+    if (e.type === "started") runData.query = e.query;
+    else if (e.type === "challenge") runData.merchantDrops = Number(e.amountDrops);
+    else if (e.type === "fee") { runData.feeDrops = Number(e.amountDrops); runData.feeBps = e.bps; }
+    else if (e.type === "unlocked") { runData.results = e.results || []; runData.query = e.query; }
+    else if (e.type === "settled") {
+      if (e.kind === "fee") { runData.feeHash = e.hash; runData.feeExplorer = e.explorer; }
+      else {
+        runData.hash = runData.hash || e.hash;
+        runData.ledgerIndex = runData.ledgerIndex ?? e.ledgerIndex;
+        runData.explorer = runData.explorer || e.explorer;
+      }
+    } else if (e.type === "complete") {
+      runData.hash = runData.hash || e.hash;
+      runData.ledgerIndex = runData.ledgerIndex ?? e.ledgerIndex;
+      runData.explorer = runData.explorer || e.explorer;
+      showResult();
+    }
+  }
+
+  function showResult() {
+    const r = runData || {};
+    if (!r.hash && !(r.results && r.results.length)) return;
+    const merchant = r.merchantDrops || 0;
+    const fee = r.feeDrops || 0;
+    const total = merchant + fee;
+    const remaining = policyTotalDrops != null ? dropsToXrp(policyTotalDrops - total) : "—";
+    const items = (r.results || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("")
+      || `<li style="color:var(--faint)">(no items returned)</li>`;
+    const feeTile = fee > 0
+      ? `<div class="cost-tile"><div class="ct-k">Leash fee ${r.feeBps != null ? r.feeBps / 100 + "%" : ""}</div><div class="ct-v gold">${dropsToXrp(fee)} XRP</div></div>` : "";
+    const merchantBtn = r.explorer
+      ? `<a class="btn blue" target="_blank" rel="noopener" href="${escapeHtml(r.explorer)}">Merchant tx ↗</a>` : "";
+    const feeBtn = r.feeExplorer
+      ? `<a class="btn gold" target="_blank" rel="noopener" href="${escapeHtml(r.feeExplorer)}">Fee tx ↗</a>` : "";
+    const txlines = [
+      r.hash ? `merchant <code>${escapeHtml(r.hash)}</code>` : "",
+      r.feeHash ? `fee <code>${escapeHtml(r.feeHash)}</code>` : "",
+    ].filter(Boolean).join("<br>");
+    resultBody.innerHTML = `
+      <div class="deliverable">
+        <div class="d-q">REPORT · <b>"${escapeHtml(r.query || "")}"</b></div>
+        <ol>${items}</ol>
+      </div>
+      <div class="cost-grid">
+        <div class="cost-tile"><div class="ct-k">Merchant</div><div class="ct-v">${dropsToXrp(merchant)} XRP</div></div>
+        ${feeTile}
+        <div class="cost-tile"><div class="ct-k">Total spent</div><div class="ct-v gold">${dropsToXrp(total)} XRP</div></div>
+        <div class="cost-tile"><div class="ct-k">Budget left</div><div class="ct-v green">${remaining} XRP</div></div>
+      </div>
+      <div class="result-actions">
+        ${merchantBtn}
+        ${feeBtn}
+        <button class="btn" id="result-export">⤓ Export report</button>
+      </div>
+      ${txlines ? `<div class="result-tx">${txlines}</div>` : ""}
+    `;
+    resultCard.hidden = false;
+    const exp = $("result-export");
+    if (exp) exp.addEventListener("click", exportReport);
+  }
+
+  function exportReport() {
+    const r = runData || {};
+    const merchant = r.merchantDrops || 0;
+    const fee = r.feeDrops || 0;
+    const lines = [
+      "# Leash — agent report", "",
+      `Query: ${r.query || ""}`,
+      `Merchant: ${dropsToXrp(merchant)} XRP`,
+    ];
+    if (fee > 0) lines.push(`Leash fee${r.feeBps != null ? ` (${r.feeBps / 100}%)` : ""}: ${dropsToXrp(fee)} XRP`);
+    lines.push(`Total spent: ${dropsToXrp(merchant + fee)} XRP`);
+    if (r.hash) lines.push(`Merchant tx: ${r.hash}`);
+    if (r.explorer) lines.push(`Merchant explorer: ${r.explorer}`);
+    if (r.feeHash) lines.push(`Fee tx: ${r.feeHash}`);
+    if (r.feeExplorer) lines.push(`Fee explorer: ${r.feeExplorer}`);
+    lines.push("", "## Results");
+    (r.results || []).forEach((x, i) => lines.push(`${i + 1}. ${x}`));
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `leash-report-${Date.now()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------- Approve/Deny modal (gate 6 made tactile) ----------
+  let pendingApprovalId = null;
+  function showApproval(e) {
+    pendingApprovalId = e.approvalId;
+    $("approval-amount").textContent = dropsToXrp(e.amountDrops) + " XRP";
+    $("approval-dest").textContent = e.destination;
+    $("approval-kind").textContent = e.kind === "fee" ? "Leash platform fee" : "merchant payment";
+    $("approval-reason").textContent = e.reason || "This payment falls in the approval band you set.";
+    $("approval-overlay").hidden = false;
+  }
+  function hideApproval() { $("approval-overlay").hidden = true; pendingApprovalId = null; }
+  async function decide(decision) {
+    const id = pendingApprovalId;
+    hideApproval();
+    if (!id) return;
+    try {
+      await fetch("/api/decision", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approvalId: id, decision }),
+      });
+    } catch (e) { /* the run will auto-deny on timeout if this fails */ }
+  }
+  $("approval-approve").addEventListener("click", () => decide("approve"));
+  $("approval-deny").addEventListener("click", () => decide("deny"));
+
   function render(e) {
+    captureForResult(e);
     switch (e.type) {
       case "started":
         return bubble("started", `🚀 <b>Started:</b> "${escapeHtml(e.query)}"`);
@@ -316,14 +942,35 @@
       }
       case "wallet_loaded":
         return bubble("wallet_loaded", `👛 agent wallet: <code>${escapeHtml(e.address)}</code>`);
+      case "fee":
+        return bubble("challenge",
+          `🏷️ <b>Leash fee ${e.bps / 100}%</b><br>
+          • ${e.amountDrops} drops (${dropsToXrp(e.amountDrops)} XRP)<br>
+          • → <code>${escapeHtml(e.destination)}</code>`);
       case "signing":
-        return bubble("signing", `✍️ signing + broadcasting Payment on testnet…`);
-      case "settled":
+        return bubble("signing",
+          `✍️ signing + broadcasting ${e.kind === "fee" ? "the fee" : "Payment"} on testnet…`);
+      case "settled": {
+        const label = e.kind === "fee" ? "FEE SETTLED" : "TX SETTLED";
+        const amt = e.amountDrops != null ? ` · ${dropsToXrp(e.amountDrops)} XRP` : "";
+        const chainTag = e.chain ? ` <span style="color:var(--faint)">[${escapeHtml(e.chain)}]</span>` : "";
         return bubble("settled",
-          `✅ <b>TX SETTLED</b><br>
+          `✅ <b>${label}</b>${amt}${chainTag}<br>
           • ledger: ${e.ledgerIndex}<br>
           • hash: <code>${escapeHtml(e.hash)}</code>
           <a class="btn blue explorer" target="_blank" rel="noopener" href="${escapeHtml(e.explorer)}">View on Explorer ↗</a>`);
+      }
+      case "approval_request":
+        showApproval(e);
+        return bubble("approval_request",
+          `🟡 <b>Approval needed</b> — ${dropsToXrp(e.amountDrops)} XRP to <code>${escapeHtml(e.destination)}</code>`);
+      case "approval_resolved":
+        return bubble("approval_resolved " + e.decision,
+          `${e.decision === "approve" ? "✓" : "✕"} <b>You ${e.decision === "approve" ? "approved" : "denied"}</b> the ${escapeHtml(e.kind)} payment.`);
+      case "halted":
+        return bubble("halted", `🛑 <b>Halted</b> — ${escapeHtml(e.reason)}. No signature produced.`);
+      case "thinking":
+        return bubble("thinking", `💭 ${escapeHtml(e.text)}`);
       case "unlocked": {
         const items = (e.results || []).map((r) => `<li>${escapeHtml(r)}</li>`).join("");
         return bubble("unlocked",
@@ -355,16 +1002,28 @@
       return;
     }
     const query = ($("task-input").value || "compare AI coding tools 2026").trim();
-    const anthropicKey = localStorage.getItem(BYOK_KEY) || undefined;
+    const model = selectedModel;
+    const chain = selectedChain;
+    const apiKey = getKeys()[providerOf(model)] || undefined;
 
-    clearStream();
+    // Min/max from the Policy card → drops. Sent to the real policy engine.
+    const xrpToDrops = (el) => {
+      const v = el ? parseFloat(el.value) : NaN;
+      return Number.isFinite(v) && v > 0 ? Math.round(v * 1_000_000) : undefined;
+    };
+    const minDrops = xrpToDrops($("policy-min"));
+    const maxDrops = xrpToDrops($("policy-max"));
+
+    runData = {};
+    resultCard.hidden = true;
+    startRunDivider(query); // append to history instead of wiping it
     setWorking(true);
 
     try {
       const resp = await fetch("/api/task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, anthropicKey }),
+        body: JSON.stringify({ query, model, chain, apiKey, minDrops, maxDrops }),
       });
       if (!resp.body) throw new Error("no response body");
       const reader = resp.body.getReader();
@@ -386,9 +1045,9 @@
           if (!data) continue;
           try {
             const parsed = JSON.parse(data);
-            if (ev === "agent") render(parsed);
+            if (ev === "agent") logEvent(parsed);
             else if (ev === "done" && !parsed.ok && parsed.error) {
-              render({ type: "error", message: parsed.error });
+              logEvent({ type: "error", message: parsed.error });
             }
           } catch (e) {
             // ignore malformed lines
@@ -396,9 +1055,11 @@
         }
       }
     } catch (err) {
-      render({ type: "error", message: err && err.message ? err.message : String(err) });
+      logEvent({ type: "error", message: err && err.message ? err.message : String(err) });
     } finally {
       setWorking(false);
+      hideApproval();
+      loadWallet(); // balance changed after the run's payments
     }
   }
   launchBtn.addEventListener("click", runTask);

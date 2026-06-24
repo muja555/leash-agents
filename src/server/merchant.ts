@@ -189,7 +189,9 @@ async function verifyAndUnlock(
 
 export async function buildMerchantApp(): Promise<{ app: Express; payTo: string }> {
   const merchantWallet = await loadOrFundWallet(config.xrpl.merchantSeed, "merchant");
-  const payTo = config.xrpl.payTo ?? merchantWallet.classicAddress;
+  // The merchant's receive address is its own wallet — in production this is
+  // whatever the external paid service puts in its 402, never a Leash setting.
+  const payTo = merchantWallet.classicAddress;
 
   const app = express();
 

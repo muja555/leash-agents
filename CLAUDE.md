@@ -51,12 +51,15 @@ Implementation: `src/policy/engine.ts` (the `evaluate()` function). All M1+ paym
 ## Out of scope (for now)
 Mainnet · multiple task types · production-grade custody · funded-wallet AI billing · server-side key persistence · the regional/MENA fintech idea · buying or holding XRP.
 
-## Current progress (2026-06-18)
+## Current progress (2026-06-24)
 
 - **M1 — DONE.** Direct-XRPL thin slice. First settled testnet tx `4B85617C1C393E97A72A9BDD81D34F5C8B718397DAEEDD397A5FD0912EBCDE38` (ledger 18297486). Commit `a79daa0`. Proof: https://testnet.xrpl.org/transactions/4B85617C1C393E97A72A9BDD81D34F5C8B718397DAEEDD397A5FD0912EBCDE38 . Re-verified after the event-stream refactor with tx `B94F2A00AF6802146A817E6D46AA81E37465CBC9A97D92E41B05A72966C6FCCB` (ledger 18331702).
 - **M2 — SHIPPED.** Web app at `http://localhost:8080` — vanilla HTML/CSS/JS frontend, Express + SSE backend, same M1 loop streamed live to the browser. BYOK input is in the UX (stored in browser `localStorage`); will plug into Claude at M3. Run: `npm run web`. Walkthrough: `leash_web_demo.html`. End-to-end verified with testnet tx `C1F390CCFC482ED378393B35E3F52A2C5A17E17DA177AF1E79D7284354E0E484` (ledger 18334152) fired from the web UI via `POST /api/task` SSE.
 - **Previously-attempted M2 (Telegram bot) — REPLACED.** Telegram bot was scaffolded and committed at `e1729dc`, then removed in this commit because the user prefers a URL anyone can open over a bot that requires Telegram + a publishing step. The `src/agent/events.ts` event-sink abstraction from the bot path was kept — the web SSE stream reuses it unchanged.
-- **Next: M3.** Wire Claude (BYOK) into the agent loop. Add threshold-triggered Approve/Deny via a web modal. Add per-user wallet flow with `/wallet` panel + testnet faucet button. Wire Kill Switch through the policy engine for in-flight refusal.
+- **M3 — DONE (human-in-the-loop controls).** Threshold-triggered **Approve/Deny modal** wired end-to-end: `ask_human` pauses the loop, emits `approval_request`, awaits `POST /api/decision`; verified approve→settles, deny→refuses ("denied by human"). **Kill switch wired server-side** through the policy engine (`src/web/control.ts` halt flag, re-checked before every signature; verified deny at the `halted` gate, no payment). **`/wallet` panel** (address + balance + testnet faucet) live. AI gateway `complete()` wired for real (OpenRouter) — but the agent loop doesn't yet *reason* with it (the one remaining M3 piece; deterministic for now).
+- **Approach A scaffold — DONE.** Control-plane-over-rails base: chain-agnostic `PaymentAdapter` (`src/chains/`; XRPL live, Solana/Base/Ethereum stubs), AI model **gateway** (`src/ai/gateway.ts`, OpenRouter catalog), prepaid USD **credits** ledger (`src/credits/`, non-custodial, off by default → BYOK). UI has model + chain selectors + credits/BYOK badge. New APIs: `/api/chains|models|credits|decision|kill|wallet|faucet`. Non-custodial is a DECIDED constraint.
+- **M4 — in progress.** README rewritten, MIT `LICENSE` added (open-source), HTTP API documented. Remaining: agent *reasoning* loop (needs a live model key to exercise) + demo video (user records).
+- **Positioning:** see `leash_competitor_analysis.html` — neutral, non-custodial control tower over x402/AP2 + wallet infra; ride the rails, own the governance/UX layer.
 
 ## Repo
 - Private: https://github.com/muja555/leash

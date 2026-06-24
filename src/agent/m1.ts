@@ -1,3 +1,4 @@
+import { getAdapter, resolveChain, type ChainId } from "../chains/index.js";
 import { config } from "../config.js";
 import { appendPayment } from "../log/payments.js";
 import {
@@ -5,13 +6,11 @@ import {
   freshSpendState,
   recordSpend,
 } from "../policy/engine.js";
-import type { PaymentRequest, Policy } from "../policy/types.js";
-import { loadOrFundWallet } from "../xrpl/client.js";
-import { txExplorerUrl } from "../xrpl/explorer.js";
-import { sendXrpPayment } from "../xrpl/pay.js";
+import type { PaymentRequest, Policy, SpendState } from "../policy/types.js";
 import { noopSink, type EventSink } from "./events.js";
 
 const SERVICE = "leash:research";
+const FEE_SERVICE = "leash:fee"; // Leash's platform-fee payment
 
 interface Required402 {
   error: string;
@@ -25,13 +24,26 @@ interface Required402 {
   instructions?: string;
 }
 
-function buildPolicy(): Policy {
+/**
+ * Per-run policy overrides the caller may supply (e.g. the web UI's min/max
+ * inputs). Anything omitted falls back to the config defaults. These flow into
+ * the real policy engine — they are not cosmetic.
+ *   min = approvalThresholdDrops (at/below → auto-pay)
+ *   max = perTxCapDrops          (above   → deny)
+ */
+export interface PolicyOverrides {
+  approvalThresholdDrops?: number;
+  perTxCapDrops?: number;
+}
+
+function buildPolicy(overrides?: PolicyOverrides): Policy {
   return {
     totalBudgetDrops: config.policy.totalBudgetDrops,
-    perTxCapDrops: config.policy.perTxCapDrops,
+    perTxCapDrops: overrides?.perTxCapDrops ?? config.policy.perTxCapDrops,
     dailyCapDrops: config.policy.dailyCapDrops,
-    approvalThresholdDrops: config.policy.approvalThresholdDrops,
-    allowlist: new Set([SERVICE]),
+    approvalThresholdDrops:
+      overrides?.approvalThresholdDrops ?? config.policy.approvalThresholdDrops,
+    allowlist: new Set([SERVICE, FEE_SERVICE]),
     denylist: new Set<string>(),
     halted: false,
   };
@@ -41,6 +53,23 @@ export interface RunM1Args {
   merchantPort: number;
   merchantPayTo: string;
   query?: string;
+  /** Settlement chain for this run; defaults to config.chains.default (xrpl). */
+  chain?: ChainId;
+  /** Per-run min/max overrides from the caller; applied in the policy engine. */
+  policy?: PolicyOverrides;
+  /**
+   * Gate 6 made tactile: when the policy returns `ask_human`, the loop pauses
+   * and awaits this. Resolve "approve" to release the signature, "deny" to
+   * refuse. Omitted (terminal mode) → ask_human is treated as a hard stop.
+   */
+  requestApproval?: (info: {
+    amountDrops: number;
+    destination: string;
+    reason: string;
+    kind: "merchant" | "fee";
+  }) => Promise<"approve" | "deny">;
+  /** Live kill-switch check; re-read before every gate + signature. */
+  isHalted?: () => boolean;
   /**
    * Subscribes to the agent's progress events. Same loop serves the terminal
    * demo (consoleSink) and the Telegram bot (a sink that posts chat messages).
@@ -54,8 +83,50 @@ export async function runM1(
   const emit = args.onEvent ?? noopSink;
   const query = args.query ?? config.agent.query;
   const url = `http://127.0.0.1:${args.merchantPort}/research?q=${encodeURIComponent(query)}`;
-  const policy = buildPolicy();
+  const policy = buildPolicy(args.policy);
+  const chain = resolveChain(args.chain);
+  const adapter = getAdapter(chain);
   let spend = freshSpendState();
+
+  // Re-read the kill switch and fold it into gate 1 before every evaluate/sign.
+  const refreshHalt = (): void => {
+    if (args.isHalted) policy.halted = args.isHalted();
+  };
+  const haltGuard = async (): Promise<void> => {
+    if (args.isHalted?.()) {
+      await emit({ type: "halted", reason: "kill switch active" });
+      throw new Error("halted by kill switch");
+    }
+  };
+
+  // Run one payment request through the policy engine, asking the human on
+  // ask_human. Returns true to proceed, throws on deny/halt.
+  const clearGate = async (
+    req: PaymentRequest,
+    spendForEval: SpendState,
+    kind: "merchant" | "fee",
+  ): Promise<void> => {
+    refreshHalt();
+    const decision = evaluate(policy, spendForEval, req);
+    await emit({ type: "policy_decision", decision });
+    if (decision.kind === "deny") {
+      throw new Error(`policy denied ${kind} payment at gate ${decision.gate}: ${decision.reason}`);
+    }
+    if (decision.kind === "ask_human") {
+      if (!args.requestApproval) {
+        throw new Error(`policy requires human approval (${decision.reason}) — no approver attached`);
+      }
+      const verdict = await args.requestApproval({
+        amountDrops: req.amountDrops,
+        destination: req.destination,
+        reason: decision.reason,
+        kind,
+      });
+      await emit({ type: "approval_resolved", decision: verdict, kind });
+      if (verdict === "deny") throw new Error(`${kind} payment denied by human`);
+    }
+    await haltGuard(); // a kill during the approval wait must still refuse
+  };
 
   await emit({ type: "started", query });
 
@@ -90,36 +161,50 @@ export async function runM1(
     memo: req402.memo,
   });
 
+  // Leash's platform fee — a SEPARATE payment, on top of the merchant price,
+  // sent to the configured fee wallet. Skipped entirely if no fee wallet is set.
+  const feeWallet = config.fee.wallet;
+  const feeBps = config.fee.bps;
+  const feeDrops = feeWallet && feeBps > 0 ? Math.round((amountDrops * feeBps) / 10_000) : 0;
+  const feeRequest: PaymentRequest | null =
+    feeWallet && feeDrops > 0
+      ? {
+          service: FEE_SERVICE,
+          amountDrops: feeDrops,
+          destination: feeWallet,
+          reason: `Leash platform fee (${feeBps / 100}%)`,
+        }
+      : null;
+
   // ----- 2. Policy engine — runs BEFORE any signature is produced -----
-  const decision = evaluate(policy, spend, paymentRequest);
-  await emit({ type: "policy_decision", decision });
-  if (decision.kind === "deny") {
-    throw new Error(`policy denied payment at gate ${decision.gate}: ${decision.reason}`);
-  }
-  if (decision.kind === "ask_human") {
-    throw new Error(
-      `policy requires human approval (${decision.reason}) — M1 cannot ask yet; raise POLICY_APPROVAL_THRESHOLD_DROPS or lower XRPL_PRICE_DROPS.`,
-    );
+  // Merchant payment, then the fee (evaluated against spend projected AFTER the
+  // merchant payment) — both pass the same engine; ask_human pauses for the UI.
+  await clearGate(paymentRequest, spend, "merchant");
+  if (feeRequest) {
+    await clearGate(feeRequest, recordSpend(spend, paymentRequest), "fee");
   }
 
-  // ----- 3. Load (or auto-fund) the agent wallet -----
-  const agentWallet = await loadOrFundWallet(config.xrpl.agentSeed, "agent");
-  await emit({ type: "wallet_loaded", address: agentWallet.classicAddress });
+  // ----- 3. Load (or auto-fund) the agent wallet on the chosen chain -----
+  const { address } = await adapter.loadAgentWallet();
+  await emit({ type: "wallet_loaded", address });
 
   // ----- 4. Sign + submit the Payment with the memo binding it to the 402 -----
-  await emit({ type: "signing", amountDrops, destination: req402.payTo });
-  const payment = await sendXrpPayment({
-    wallet: agentWallet,
+  await haltGuard();
+  await emit({ type: "signing", amountDrops, destination: req402.payTo, kind: "merchant" });
+  const payment = await adapter.sendPayment({
     destination: req402.payTo,
-    amountDrops: req402.amountDrops,
+    amount: req402.amountDrops,
     memo: req402.memo,
   });
-  const explorer = txExplorerUrl(payment.hash);
+  const explorer = payment.explorer;
   await emit({
     type: "settled",
     hash: payment.hash,
     ledgerIndex: payment.ledgerIndex,
     explorer,
+    kind: "merchant",
+    amountDrops,
+    chain,
   });
 
   // ----- 5. Retry the request with ?tx=<hash> — merchant verifies on ledger -----
@@ -142,6 +227,47 @@ export async function runM1(
     ledgerIndex: payment.ledgerIndex,
     explorer,
   });
+
+  // ----- 7. Pay Leash's platform fee — separate on-chain tx, on top -----
+  if (feeRequest) {
+    await emit({
+      type: "fee",
+      amountDrops: feeRequest.amountDrops,
+      destination: feeRequest.destination,
+      bps: feeBps,
+    });
+    await haltGuard();
+    await emit({
+      type: "signing",
+      amountDrops: feeRequest.amountDrops,
+      destination: feeRequest.destination,
+      kind: "fee",
+    });
+    const feePayment = await adapter.sendPayment({
+      destination: feeRequest.destination,
+      amount: String(feeRequest.amountDrops),
+      memo: `leash-fee:${req402.nonce}`,
+    });
+    const feeExplorer = feePayment.explorer;
+    await emit({
+      type: "settled",
+      hash: feePayment.hash,
+      ledgerIndex: feePayment.ledgerIndex,
+      explorer: feeExplorer,
+      kind: "fee",
+      amountDrops: feeRequest.amountDrops,
+      chain,
+    });
+    spend = recordSpend(spend, feeRequest);
+    await appendPayment({
+      ts: new Date().toISOString(),
+      service: feeRequest.service,
+      amountDrops: String(feeRequest.amountDrops),
+      hash: feePayment.hash,
+      ledgerIndex: feePayment.ledgerIndex,
+      explorer: feeExplorer,
+    });
+  }
 
   await emit({
     type: "complete",

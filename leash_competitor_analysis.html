@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leash — Competitive Analysis & Positioning (2026)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B0E13; --panel:#141A22; --panel-2:#1B232E;
+    --line:#28323E; --line-soft:#1F2832;
+    --text:#EAF0F7; --muted:#94A2B3; --faint:#5F6C7D;
+    --gold:#E8B23A; --green:#41C46B; --red:#EB5757; --blue:#5C9CFF; --violet:#9B7BFF;
+    --card:linear-gradient(180deg,#1A222D,#141A22);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ink);color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;line-height:1.6;font-size:15px;
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(1100px 560px at 85% -12%,rgba(92,156,255,.10),transparent 60%),
+      radial-gradient(820px 460px at 0% -4%,rgba(232,178,58,.07),transparent 55%);
+    background-attachment:fixed;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px 100px;}
+  header{padding:46px 0 26px;border-bottom:1px solid var(--line-soft);margin-bottom:34px;}
+  .kick{font-family:'JetBrains Mono';font-size:11px;letter-spacing:.18em;color:var(--gold);
+    text-transform:uppercase;margin-bottom:14px;}
+  h1{font-family:'Space Grotesk';font-weight:700;font-size:clamp(28px,5vw,44px);line-height:1.05;
+    letter-spacing:-.03em;margin:0 0 16px;
+    background:linear-gradient(180deg,#fff,#B9C6D6);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .sub{font-size:17px;color:var(--muted);max-width:760px;margin:0;}
+  .meta{font-family:'JetBrains Mono';font-size:11.5px;color:var(--faint);margin-top:18px;display:flex;gap:18px;flex-wrap:wrap;}
+  h2{font-family:'Space Grotesk';font-weight:600;font-size:24px;letter-spacing:-.02em;
+    margin:48px 0 8px;display:flex;align-items:center;gap:12px;}
+  h2 .n{font-family:'JetBrains Mono';font-size:13px;color:var(--gold);border:1px solid var(--line);
+    border-radius:8px;padding:3px 9px;font-weight:500;}
+  h3{font-family:'Space Grotesk';font-weight:600;font-size:17px;margin:26px 0 8px;letter-spacing:-.01em;}
+  p{margin:10px 0;color:#D5DEE9;}
+  .lead{color:var(--muted);font-size:14px;margin-top:0;}
+  a{color:var(--blue);text-decoration:none;border-bottom:1px solid rgba(92,156,255,.3);}
+  a:hover{border-color:var(--blue);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin:18px 0;
+    box-shadow:0 18px 40px -28px rgba(0,0,0,.8);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr;}}
+  ul{margin:10px 0;padding-left:20px;color:#D5DEE9;}
+  li{margin-bottom:7px;}
+  li::marker{color:var(--faint);}
+  b{color:#fff;font-weight:600;}
+  .tag{font-family:'JetBrains Mono';font-size:10px;letter-spacing:.06em;padding:3px 8px;border-radius:999px;
+    border:1px solid var(--line);color:var(--muted);display:inline-block;}
+  .tag.gold{color:var(--gold);border-color:rgba(232,178,58,.3);background:rgba(232,178,58,.07);}
+  .tag.green{color:var(--green);border-color:rgba(65,196,107,.3);background:rgba(65,196,107,.07);}
+  .tag.red{color:var(--red);border-color:rgba(235,87,87,.3);background:rgba(235,87,87,.07);}
+  .tag.blue{color:var(--blue);border-color:rgba(92,156,255,.3);background:rgba(92,156,255,.07);}
+  .tag.violet{color:var(--violet);border-color:rgba(155,123,255,.3);background:rgba(155,123,255,.07);}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
+  th{font-family:'JetBrains Mono';font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
+    border-bottom:1px solid var(--line);}
+  td b{font-family:'Space Grotesk';}
+  tbody tr:hover{background:rgba(255,255,255,.02);}
+  .threat{font-family:'JetBrains Mono';font-size:10px;padding:2px 7px;border-radius:6px;white-space:nowrap;}
+  .t-hi{background:rgba(235,87,87,.12);color:var(--red);}
+  .t-mid{background:rgba(232,178,58,.12);color:var(--gold);}
+  .t-low{background:rgba(65,196,107,.12);color:var(--green);}
+  .t-wind{background:rgba(92,156,255,.12);color:var(--blue);}
+  .callout{border-left:3px solid var(--gold);background:rgba(232,178,58,.05);border-radius:0 12px 12px 0;
+    padding:14px 18px;margin:18px 0;}
+  .callout.green{border-color:var(--green);background:rgba(65,196,107,.05);}
+  .callout.red{border-color:var(--red);background:rgba(235,87,87,.05);}
+  .callout .h{font-family:'Space Grotesk';font-weight:600;font-size:15px;margin-bottom:4px;}
+  .verdict{font-family:'JetBrains Mono';font-size:12px;color:var(--gold);}
+  .approach{counter-reset:none;}
+  .approach .card{position:relative;overflow:hidden;}
+  .approach .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--blue);}
+  .approach .card.rec::before{background:var(--green);}
+  .recpill{font-family:'JetBrains Mono';font-size:10px;color:var(--green);border:1px solid rgba(65,196,107,.4);
+    background:rgba(65,196,107,.08);padding:2px 8px;border-radius:999px;margin-left:8px;}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-family:'JetBrains Mono';font-size:11px;color:var(--muted);margin:10px 0 0;}
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .src{font-size:12.5px;color:var(--muted);}
+  .src li{margin-bottom:4px;}
+  footer{margin-top:50px;padding-top:22px;border-top:1px solid var(--line-soft);
+    font-family:'JetBrains Mono';font-size:11px;color:var(--faint);}
+  .disc{font-size:12px;color:var(--faint);font-style:italic;margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kick">Leash · Strategy Memo</div>
+  <h1>Agentic Payments: the field, and where Leash actually wins</h1>
+  <p class="sub">A scan of the "agents that can pay" market as of mid-2026 — who's building it, how they differ, and the one defensible wedge left for a non-custodial, multi-chain control tower.</p>
+  <div class="meta">
+    <span>Prepared 2026-06-21</span><span>·</span>
+    <span>Scope: agent-payment infra, wallets, protocols, governance</span><span>·</span>
+    <span>Model: non-custodial prepaid-credit SaaS</span>
+  </div>
+</header>
+
+<!-- TLDR -->
+<div class="callout">
+  <div class="h">TL;DR</div>
+  <p style="margin:6px 0 0">The <b>rails are commoditizing</b> (x402, AP2, Visa/Mastercard schemes are free and standardizing) and <b>wallet-with-spend-limits is already crowded</b> (Coinbase, Crossmint, Nevermined). You will not out-infra a16z- and Coinbase-funded incumbents. The open lane is the <b>human-facing control + governance layer</b>: a <b>neutral, non-custodial, chain- and model-agnostic "control tower"</b> aimed at <b>operators, not crypto devs</b> — riding the rails and using their wallets as plumbing, not rebuilding them.</p>
+</div>
+
+<!-- 1. MAP -->
+<h2><span class="n">1</span> The landscape splits into four layers</h2>
+<p class="lead">Almost everything in "AI agents that pay" falls into one of these. Knowing which layer you're in tells you who you compete with — and who you sit on top of.</p>
+<div class="grid2">
+  <div class="card">
+    <span class="tag blue">Layer A · Protocols</span>
+    <h3>Payment standards</h3>
+    <p style="margin:6px 0 0">x402 (Coinbase), AP2 (Google), OpenAI ACP, Visa Trusted Agent, Mastercard Agent Pay. Free, open, converging. <b>These are tailwinds, not rivals</b> — Leash speaks them.</p>
+  </div>
+  <div class="card">
+    <span class="tag violet">Layer B · Wallet / signing infra</span>
+    <h3>Give an agent a wallet</h3>
+    <p style="margin:6px 0 0">Coinbase AgentKit + Agentic Wallets, Crossmint, Privy, Turnkey, Openfort. SDKs with spend caps + allowlists. <b>Crowded & well-funded</b> — use as plumbing.</p>
+  </div>
+  <div class="card">
+    <span class="tag red">Layer C · Custodial / regulated FIs</span>
+    <h3>Hold funds, move money</h3>
+    <p style="margin:6px 0 0">Catena Labs (regulated AI-native bank, $48M), Skyfire (agent payment network). Heavy compliance moat. <b>A different, capital-intensive game.</b></p>
+  </div>
+  <div class="card">
+    <span class="tag green">Layer D · Monetization & control</span>
+    <h3>Billing, guardrails, oversight</h3>
+    <p style="margin:6px 0 0">Nevermined (billing + hard limits), Payman (AI pays humans). <b>This is Leash's neighborhood</b> — and the least saturated for an <em>app</em>, not an API.</p>
+  </div>
+</div>
+
+<!-- 2. COMPETITORS -->
+<h2><span class="n">2</span> Competitor teardown</h2>
+<p class="lead">The players that overlap Leash most directly, ranked by how much they threaten the position.</p>
+<div class="legend">
+  <span><span class="threat t-hi">HIGH</span> direct overlap</span>
+  <span><span class="threat t-mid">MED</span> partial overlap</span>
+  <span><span class="threat t-low">LOW</span> adjacent / different model</span>
+  <span><span class="threat t-wind">TAILWIND</span> infra Leash builds on</span>
+</div>
+<table>
+  <thead><tr><th>Player</th><th>What it is</th><th>Custody</th><th>Chains</th><th>Controls</th><th>Audience</th><th>Overlap</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>Crossmint</b></td>
+      <td>Non-custodial agent wallets + guardrails (limits, merchant whitelist, human approval, audit logs), virtual cards</td>
+      <td>Non-custodial</td>
+      <td>Multi-chain</td>
+      <td>Strong (the closest match)</td>
+      <td>Developers / enterprise</td>
+      <td><span class="threat t-hi">HIGH</span></td>
+    </tr>
+    <tr>
+      <td><b>Coinbase</b> (x402 + AgentKit + Agentic Wallets)</td>
+      <td>Protocol + SDK + TEE-enforced wallet (session/tx caps, allowlists, KYT)</td>
+      <td>Non-custodial (TEE / CDP)</td>
+      <td>Base, EVM, Solana</td>
+      <td>Strong, infra-level</td>
+      <td>Developers</td>
+      <td><span class="threat t-hi">HIGH</span></td>
+    </tr>
+    <tr>
+      <td><b>Nevermined</b></td>
+      <td>Billing/monetization + server-side hard spend limits, instant revoke, full audit</td>
+      <td>Mixed</td>
+      <td>Multi-chain</td>
+      <td>Strong, server-side</td>
+      <td>AI service providers</td>
+      <td><span class="threat t-mid">MED</span></td>
+    </tr>
+    <tr>
+      <td><b>Skyfire</b></td>
+      <td>Agent payment network ("trust stack"), USDC, per-agent wallet</td>
+      <td>Custodial-ish</td>
+      <td>USDC rails</td>
+      <td>Identity + spend</td>
+      <td>Agent builders</td>
+      <td><span class="threat t-mid">MED</span></td>
+    </tr>
+    <tr>
+      <td><b>Catena Labs</b></td>
+      <td>Regulated "AI-native bank" for agents (Circle cofounder)</td>
+      <td>Custodial / regulated</td>
+      <td>Stablecoin</td>
+      <td>Bank-grade compliance</td>
+      <td>Enterprises</td>
+      <td><span class="threat t-low">LOW</span></td>
+    </tr>
+    <tr>
+      <td><b>Privy / Turnkey / Openfort</b></td>
+      <td>Wallet signing / key-management primitives</td>
+      <td>Non-custodial</td>
+      <td>Multi-chain</td>
+      <td>Signing policy only</td>
+      <td>Developers</td>
+      <td><span class="threat t-wind">TAILWIND</span></td>
+    </tr>
+    <tr>
+      <td><b>x402 / AP2 / Visa / Mastercard</b></td>
+      <td>Open payment protocols & card-rail tokenization (60+ partners on AP2)</td>
+      <td>n/a (standards)</td>
+      <td>Stablecoin + card</td>
+      <td>Mandates / verification</td>
+      <td>Whole ecosystem</td>
+      <td><span class="threat t-wind">TAILWIND</span></td>
+    </tr>
+    <tr>
+      <td><b>Payman</b></td>
+      <td>AI agents pay <em>humans</em> for tasks (Fiverr-like)</td>
+      <td>Custodial</td>
+      <td>USDC</td>
+      <td>Task-scoped</td>
+      <td>Agent builders</td>
+      <td><span class="threat t-low">LOW</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- 3. WHERE LEASH IS / ISN'T UNIQUE -->
+<h2><span class="n">3</span> Where Leash is — and isn't — unique</h2>
+<div class="grid2">
+  <div class="card">
+    <h3 style="color:var(--red)">✗ Not unique (don't claim these)</h3>
+    <ul>
+      <li><b>Spending limits + allowlists.</b> Table stakes — Coinbase, Crossmint, Nevermined all ship them.</li>
+      <li><b>Human-approval-over-threshold.</b> Crossmint lists this explicitly.</li>
+      <li><b>Audit log of payments.</b> Standard across the field.</li>
+      <li><b>An agent wallet / signing.</b> Privy, Turnkey, Coinbase own this; don't rebuild it.</li>
+      <li><b>The XRPL payment loop itself.</b> x402 is now an open standard with giant backers.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="color:var(--green)">✓ Defensible wedge (lean in)</h3>
+    <ul>
+      <li><b>An <em>app</em>, not an SDK.</b> Rivals sell APIs to developers. Leash is a control tower a <em>non-technical operator</em> opens and watches.</li>
+      <li><b>Neutral across chains AND model providers.</b> Coinbase is Base-centric; most tie you to their stack. Leash = Switzerland (XRPL + Solana + L2s, any model via a gateway).</li>
+      <li><b>Governance depth as the product</b> — the policy engine, approve/deny, kill switch as the <em>core UX</em>, not a config flag.</li>
+      <li><b>Non-custodial by design</b> — sidesteps the money-transmitter burden Catena/Skyfire take on.</li>
+      <li><b>Prepaid-credit simplicity for the AI</b> — buy credits, pick a model, go; no BYOK friction for normal users.</li>
+    </ul>
+  </div>
+</div>
+<div class="callout green">
+  <div class="h">One-line positioning</div>
+  <p style="margin:6px 0 0"><b>"The neutral control tower for agents that spend — non-custodial, any chain, any model, run by a human who stays in charge."</b> You sit <em>above</em> x402/AP2 and <em>on top of</em> Crossmint/Coinbase/Turnkey wallets, owning the layer they treat as an afterthought: oversight, governance, and operator UX.</p>
+</div>
+
+<!-- 4. APPROACHES -->
+<h2><span class="n">4</span> Three approaches to get there</h2>
+<div class="approach">
+  <div class="card rec">
+    <h3>A · Control plane on top of the rails <span class="recpill">RECOMMENDED</span></h3>
+    <p>Don't build wallet infra or rails. Integrate <b>x402/AP2</b> for settlement and use <b>Crossmint / Coinbase / Turnkey</b> for non-custodial wallets. Leash owns the <b>policy engine + human oversight + multi-chain/multi-model dashboard + prepaid AI credits</b>.</p>
+    <p class="verdict">+ Fastest to ship · rides the tailwinds · capital-light · keeps your moat (UX/governance) — your own CLAUDE.md already bets here.<br>− You depend on partners' wallets; differentiation must stay in the control layer.</p>
+  </div>
+  <div class="card">
+    <h3>B · Vertical SaaS (own one niche end-to-end)</h3>
+    <p>Pick a single high-value use case — e.g. <b>autonomous research/data buying</b> or <b>SMB procurement agents</b> — and own the whole non-custodial flow there with deep, domain-specific policy.</p>
+    <p class="verdict">+ Clear buyer, sharper story, less head-on with horizontal infra.<br>− Smaller TAM per vertical; you must actually nail one workflow.</p>
+  </div>
+  <div class="card">
+    <h3>C · Open-source the governance layer</h3>
+    <p>Make the <b>policy engine the standard guardrail</b> others embed (open-source core, hosted control tower for revenue). Credibility + grants + ecosystem gravity.</p>
+    <p class="verdict">+ Distribution & defensibility via adoption; great for XRPL Grants narrative.<br>− Monetization is slower/indirect; needs community momentum.</p>
+  </div>
+</div>
+<p style="margin-top:14px">Recommended sequence: <b>A now</b> (ship the control tower on borrowed rails + wallets), <b>seed C in parallel</b> (open-source the policy engine for credibility/grants), keep <b>B</b> as the go-to-market wedge (lead with one vertical even while the platform is horizontal).</p>
+
+<!-- 5. RISKS -->
+<h2><span class="n">5</span> Strategic risks to price in</h2>
+<div class="card">
+  <ul>
+    <li><b>Platform risk.</b> Coinbase/Google could fold "oversight UX" into their free SDKs. Counter: stay <em>neutral</em> (multi-chain + multi-provider) — that's the one thing a Coinbase or Google structurally won't be.</li>
+    <li><b>Commoditization.</b> If guardrails become a checkbox everywhere, "depth of governance" must be visibly better (richer policy DSL, real-time approvals, team roles, spend analytics).</li>
+    <li><b>Custody creep.</b> The moment prepaid credits fund third-party merchants, you re-enter money-transmitter territory. Keep AI credits closed-loop; keep merchant payment non-custodial. <span class="tag green">decided</span></li>
+    <li><b>Distribution.</b> Infra players sell to devs who already build agents. An operator-facing app needs its own demand-gen — the vertical wedge (B) is how you get a first audience.</li>
+  </ul>
+</div>
+
+<!-- SOURCES -->
+<h2><span class="n">6</span> Sources</h2>
+<ul class="src">
+  <li><a href="https://skyfire.xyz/">Skyfire — The Agent Trust Stack</a> · <a href="https://techcrunch.com/2024/08/21/skyfire-lets-ai-agents-spend-your-money/">TechCrunch: Skyfire</a></li>
+  <li><a href="https://fortune.com/2026/05/20/catena-labs-series-a-sean-neville-ai-native-bank/">Fortune — Catena Labs $30M Series A</a> · <a href="https://www.pymnts.com/news/investment-tracker/2025/catena-labs-raises-18-million-to-build-ai-native-financial-institution-for-agents/">PYMNTS — Catena $18M seed</a></li>
+  <li><a href="https://cloud.google.com/blog/products/ai-machine-learning/announcing-agents-to-payments-ap2-protocol">Google Cloud — Announcing AP2</a> · <a href="https://www.coinbase.com/developer-platform/discover/launches/google_x402">Coinbase — Google AP2 + x402</a></li>
+  <li><a href="https://www.crossmint.com/learn/agentic-payments-standard">Crossmint — Agentic Payments Standard (Google/Visa/MC/x402)</a> · <a href="https://www.crossmint.com/solutions/agentic-payments">Crossmint — Agentic Payments Infra</a></li>
+  <li><a href="https://nevermined.ai/blog/nevermined-pay-give-your-ai-agent-a-credit-card-with-guardrails">Nevermined — Credit cards for AI agents with guardrails</a> · <a href="https://nevermined.ai/blog/stripe-issuing-vs-crossmint-vs-nevermined">Nevermined — Stripe Issuing vs Crossmint vs Nevermined</a></li>
+  <li><a href="https://www.coinbase.com/developer-platform/discover/launches/agentic-wallets">Coinbase — Introducing Agentic Wallets</a> · <a href="https://github.com/coinbase/agentkit">GitHub — coinbase/agentkit</a></li>
+  <li><a href="https://www.crossmint.com/learn/agent-wallets-compared">Crossmint — Agent Wallets Compared (Privy/Turnkey/Coinbase)</a> · <a href="https://www.digitalcommerce360.com/2025/10/16/visa-mastercard-both-launch-agentic-ai-payments-tools/">DigitalCommerce360 — Visa & Mastercard agentic tools</a></li>
+  <li><a href="https://blockeden.xyz/blog/2026/03/16/visa-coinbase-ai-agent-payment-architectures-x402-stablecoin-card-rails/">BlockEden — Visa vs Coinbase: two architectures for the AI agent payment economy</a> · <a href="https://www.odaily.news/en/post/5208194">Odaily — "Stripe for Agents" investment map</a></li>
+</ul>
+<p class="disc">Figures and product claims are drawn from the cited public sources (mid-2026) and from secondary write-ups; verify funding amounts and feature details against primary sources before quoting. This is strategic analysis, not legal or investment advice.</p>
+
+<footer>LEASH · competitive analysis · non-custodial prepaid-credit SaaS · see also leash_app_spec.html · leash_user_journey.html</footer>
+
+</div>
+</body>
+</html>

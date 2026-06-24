@@ -3,16 +3,40 @@ import { dirname, resolve as resolvePath } from "node:path";
 import express, { type Request, type Response } from "express";
 import type { AgentEvent } from "../agent/events.js";
 import { runM1 } from "../agent/m1.js";
+import { getGateway } from "../ai/gateway.js";
+import { getAdapter, isChainId, listChains, resolveChain } from "../chains/index.js";
 import { config } from "../config.js";
+import { centsToCredits, getCredits } from "../credits/ledger.js";
 import { buildMerchantApp } from "../server/merchant.js";
+import { createApproval, isHalted, resolveApproval, setHalted } from "./control.js";
 import { disconnect } from "../xrpl/client.js";
+
+// Single demo user for the in-memory credits ledger (M3 adds real auth).
+const DEMO_USER = "demo";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = resolvePath(__dirname, "..", "..", "public");
 
+// Supported BYOK providers. The key itself is never persisted server-side; it
+// only rides along in the request body so the M3 reasoning step can use it.
+const AI_PROVIDERS = ["anthropic", "openai", "gemini", "grok"] as const;
+type AiProvider = (typeof AI_PROVIDERS)[number];
+
 interface ApiTaskBody {
   query?: string;
-  anthropicKey?: string;
+  provider?: string;
+  apiKey?: string;
+  anthropicKey?: string; // legacy single-key field (pre multi-provider)
+  minDrops?: number; // auto-approve threshold (approvalThresholdDrops)
+  maxDrops?: number; // per-payment cap (perTxCapDrops)
+  chain?: string; // settlement chain id (xrpl | solana | base | …)
+  model?: string; // AI gateway model id (used by the M3 reasoning step)
+}
+
+/** Coerce a body value to a positive integer number of drops, else undefined. */
+function dropsOrUndefined(v: unknown): number | undefined {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
 }
 
 export async function startWeb(): Promise<void> {
@@ -28,13 +52,29 @@ export async function startWeb(): Promise<void> {
   app.use(express.static(PUBLIC_DIR));
   app.use(express.json({ limit: "64kb" }));
 
-  // POST /api/task — body: { query, anthropicKey? }
-  // Streams AgentEvent messages as SSE to the browser. The anthropicKey is
-  // accepted but NOT used in M2 (no Claude calls yet); it lives here so the
-  // M3 wiring is a single-call change.
+  // POST /api/task — body: { query, provider?, apiKey? }  (legacy: anthropicKey)
+  // Streams AgentEvent messages as SSE to the browser. The provider + apiKey are
+  // accepted but NOT used in M2 (no model calls yet); they live here so the M3
+  // wiring is a single-call change. The key is never persisted server-side.
   app.post("/api/task", async (req: Request, res: Response) => {
     const body = (req.body ?? {}) as ApiTaskBody;
     const query = (body.query ?? config.agent.query).slice(0, 500);
+
+    // Normalize BYOK selection. Falls back to the legacy anthropicKey field so
+    // older browser tabs keep working. Unknown providers default to anthropic.
+    const provider: AiProvider = AI_PROVIDERS.includes(body.provider as AiProvider)
+      ? (body.provider as AiProvider)
+      : "anthropic";
+    const apiKey = body.apiKey ?? body.anthropicKey;
+    const model = body.model ?? config.ai.defaultModel;
+    const chain = resolveChain(body.chain);
+    void provider; // M2: captured for M3 reasoning step, intentionally unused here
+    void apiKey; //   (never logged, never persisted)
+    void model; //    (selected model rides along for the M3 reasoning step)
+
+    // Min/max from the Policy card flow into the REAL engine for this run.
+    const approvalThresholdDrops = dropsOrUndefined(body.minDrops);
+    const perTxCapDrops = dropsOrUndefined(body.maxDrops);
 
     // Setup SSE stream — disable Nagle so each event flushes to the socket immediately
     res.writeHead(200, {
@@ -66,6 +106,22 @@ export async function startWeb(): Promise<void> {
         merchantPort: config.merchant.port,
         merchantPayTo: payTo,
         query,
+        chain,
+        policy: { approvalThresholdDrops, perTxCapDrops },
+        isHalted, // server-side kill switch — refused mid-run
+        requestApproval: async (info) => {
+          // Gate 6: emit the request to the UI, then await the user's decision.
+          const { id, wait } = createApproval();
+          write("agent", {
+            type: "approval_request",
+            approvalId: id,
+            amountDrops: info.amountDrops,
+            destination: info.destination,
+            reason: info.reason,
+            kind: info.kind,
+          });
+          return wait;
+        },
         onEvent: (e: AgentEvent) => {
           write("agent", e);
         },
@@ -89,7 +145,78 @@ export async function startWeb(): Promise<void> {
       approvalThresholdDrops: config.policy.approvalThresholdDrops,
       merchantPayTo: payTo,
       network: config.xrpl.network,
+      feeBps: config.fee.wallet ? config.fee.bps : 0,
+      feeWallet: config.fee.wallet ?? null,
     });
+  });
+
+  // GET /api/chains — settlement chains the control plane can route to
+  app.get("/api/chains", (_req, res) => {
+    res.json({ chains: listChains(), default: resolveChain() });
+  });
+
+  // GET /api/models — the AI model catalog ("AI tokens" users can pick)
+  app.get("/api/models", (_req, res) => {
+    const gw = getGateway();
+    res.json({ gateway: gw.id, gatewayReady: gw.enabled, default: config.ai.defaultModel, models: gw.listModels() });
+  });
+
+  // GET /api/credits — prepaid balance (BYOK mode when disabled)
+  app.get("/api/credits", async (_req, res) => {
+    const credits = getCredits();
+    const usdCents = await credits.getBalanceUsdCents(DEMO_USER);
+    res.json({
+      enabled: credits.enabled,
+      usdCents,
+      credits: centsToCredits(usdCents),
+      usdCentsPerCredit: config.credits.usdCentsPerCredit,
+    });
+  });
+
+  // POST /api/decision — resolve a pending human approval (Approve/Deny modal)
+  app.post("/api/decision", (req: Request, res: Response) => {
+    const { approvalId, decision } = (req.body ?? {}) as { approvalId?: string; decision?: string };
+    if (!approvalId || (decision !== "approve" && decision !== "deny")) {
+      res.status(400).json({ ok: false, error: "need { approvalId, decision: 'approve'|'deny' }" });
+      return;
+    }
+    const ok = resolveApproval(approvalId, decision);
+    res.status(ok ? 200 : 404).json({ ok });
+  });
+
+  // GET/POST /api/kill — the server-side kill switch the policy engine reads
+  app.get("/api/kill", (_req, res) => res.json({ halted: isHalted() }));
+  app.post("/api/kill", (req: Request, res: Response) => {
+    const { halted } = (req.body ?? {}) as { halted?: boolean };
+    setHalted(Boolean(halted));
+    res.json({ halted: isHalted() });
+  });
+
+  // GET /api/wallet?chain= — agent wallet address + balance (per chain)
+  app.get("/api/wallet", async (req: Request, res: Response) => {
+    const chainId = resolveChain(typeof req.query.chain === "string" ? req.query.chain : undefined);
+    try {
+      const w = await getAdapter(chainId).getBalance();
+      res.json({ chain: chainId, ...w });
+    } catch (err) {
+      res.status(503).json({ chain: chainId, error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  // POST /api/faucet?chain= — top up the agent wallet from the testnet faucet
+  app.post("/api/faucet", async (req: Request, res: Response) => {
+    const raw = typeof req.query.chain === "string" ? req.query.chain : undefined;
+    const chainId = resolveChain(raw);
+    if (raw && !isChainId(raw)) {
+      res.status(400).json({ error: `unknown chain: ${raw}` });
+      return;
+    }
+    try {
+      const w = await getAdapter(chainId).fundFromFaucet();
+      res.json({ chain: chainId, ...w });
+    } catch (err) {
+      res.status(503).json({ chain: chainId, error: err instanceof Error ? err.message : String(err) });
+    }
   });
 
   const port = Number(process.env.WEB_PORT ?? config.merchant.port);

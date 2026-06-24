@@ -18,13 +18,33 @@ export type AgentEvent =
     }
   | { type: "policy_decision"; decision: PolicyDecision }
   | { type: "wallet_loaded"; address: string }
-  | { type: "signing"; amountDrops: number; destination: string }
+  | { type: "fee"; amountDrops: number; destination: string; bps: number }
+  | {
+      type: "signing";
+      amountDrops: number;
+      destination: string;
+      kind?: "merchant" | "fee";
+    }
   | {
       type: "settled";
       hash: string;
       ledgerIndex: number;
       explorer: string;
+      kind?: "merchant" | "fee";
+      amountDrops?: number;
+      chain?: string;
     }
+  | {
+      type: "approval_request";
+      approvalId: string;
+      amountDrops: number;
+      destination: string;
+      reason: string;
+      kind: "merchant" | "fee";
+    }
+  | { type: "approval_resolved"; decision: "approve" | "deny"; kind: "merchant" | "fee" }
+  | { type: "halted"; reason: string }
+  | { type: "thinking"; text: string }
   | { type: "unlocked"; query: string; results: string[] }
   | {
       type: "complete";
@@ -62,6 +82,23 @@ export const consoleSink: EventSink = (e) => {
     }
     case "wallet_loaded":
       console.log(`[agent] wallet: ${e.address}`);
+      break;
+    case "fee":
+      console.log(
+        `[agent] platform fee ${e.bps / 100}%: ${e.amountDrops} drops → ${e.destination}`,
+      );
+      break;
+    case "approval_request":
+      console.log(`[policy] awaiting human approval: ${e.amountDrops} drops → ${e.destination}`);
+      break;
+    case "approval_resolved":
+      console.log(`[policy] human ${e.decision === "approve" ? "approved" : "denied"} the ${e.kind} payment`);
+      break;
+    case "halted":
+      console.log(`[agent] HALTED — ${e.reason}`);
+      break;
+    case "thinking":
+      console.log(`[agent] thinking: ${e.text}`);
       break;
     case "signing":
       console.log(`[agent] signing + broadcasting Payment…`);
