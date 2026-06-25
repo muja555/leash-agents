@@ -399,8 +399,11 @@
         <h2>AI model <span class="badge" id="ai-mode-badge">BYOK</span></h2>
         <p class="lead">Pick the model the agent reasons with <b style="color:var(--text)">in M3</b>. Many models via one gateway — billed from your credits, or BYOK.</p>
         <div class="credits" id="credits"></div>
-        <label for="model-select">Model</label>
-        <select id="model-select"></select>
+        <div id="model-block">
+          <label for="model-select">Model</label>
+          <select id="model-select"></select>
+        </div>
+        <div class="byok-status" id="model-fixed" hidden></div>
         <div id="byok-block">
           <label for="byok-input">Provider key <span style="text-transform:none;letter-spacing:0;color:var(--faint)">(BYOK — optional)</span></label>
           <input id="byok-input" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
@@ -561,6 +564,21 @@
     try {
       const data = await fetch("/api/models").then((r) => r.json());
       const models = data.models || [];
+      const pickerEnabled = !!data.pickerEnabled;
+      if (!pickerEnabled) {
+        // BYOK-only: hide the dropdown, lock to the host's default model.
+        selectedModel = data.default || (models[0] && models[0].id);
+        const m = models.find((x) => x.id === selectedModel);
+        $("model-block").hidden = true;
+        const fixed = $("model-fixed");
+        fixed.hidden = false;
+        fixed.innerHTML = `Model: <b style="color:var(--text)">${m ? m.label : selectedModel}</b> · set by host`;
+        activeProvider = providerOf(selectedModel);
+        refreshByokStatus(); renderHint();
+        return;
+      }
+      $("model-block").hidden = false;
+      $("model-fixed").hidden = true;
       if (!selectedModel || !models.some((m) => m.id === selectedModel)) selectedModel = data.default || (models[0] && models[0].id);
       $("model-select").innerHTML = models.map((m) =>
         `<option value="${m.id}" ${m.id === selectedModel ? "selected" : ""}>${m.label} · ${m.provider}</option>`).join("");

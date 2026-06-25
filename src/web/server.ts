@@ -159,7 +159,13 @@ export async function startWeb(): Promise<void> {
   // GET /api/models — the AI model catalog ("AI tokens" users can pick)
   app.get("/api/models", (_req, res) => {
     const gw = getGateway();
-    res.json({ gateway: gw.id, gatewayReady: gw.enabled, default: config.ai.defaultModel, models: gw.listModels() });
+    res.json({
+      gateway: gw.id,
+      gatewayReady: gw.enabled,
+      pickerEnabled: config.ai.modelPicker,
+      default: config.ai.defaultModel,
+      models: gw.listModels(),
+    });
   });
 
   // GET /api/credits — prepaid balance (BYOK mode when disabled)
