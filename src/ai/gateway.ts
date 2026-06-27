@@ -6,12 +6,12 @@ import type { AiGateway, AiModel, AiResult, CompleteArgs } from "./types.js";
 export { MODEL_CATALOG } from "./catalog.js";
 
 /**
- * Facade over the hybrid provider router. `complete()` dispatches to OpenRouter
- * (gateway key) or a native provider API (native key) — see providers/router.ts.
+ * Facade over the OpenRouter gateway. BYOK is OpenRouter-only: `complete()`
+ * routes every model + key through OpenRouter (see providers/router.ts).
  * `enabled` reflects only the server-configured gateway key; per-request BYOK
  * keys are handled separately by the `haveAi` gate in the agent loop.
  */
-export class HybridGateway implements AiGateway {
+export class OpenRouterGateway implements AiGateway {
   readonly id = "openrouter";
   readonly enabled = Boolean(config.ai.openrouterKey);
 
@@ -26,7 +26,7 @@ export class HybridGateway implements AiGateway {
 
 let cached: AiGateway | null = null;
 export function getGateway(): AiGateway {
-  if (!cached) cached = new HybridGateway();
+  if (!cached) cached = new OpenRouterGateway();
   return cached;
 }
 

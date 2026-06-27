@@ -419,8 +419,8 @@
         </div>
         <div class="byok-status" id="model-fixed" hidden></div>
         <div id="byok-block">
-          <label for="byok-input">Provider key <span style="text-transform:none;letter-spacing:0;color:var(--faint)">(BYOK — optional)</span></label>
-          <input id="byok-input" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
+          <label for="byok-input">OpenRouter key <span style="text-transform:none;letter-spacing:0;color:var(--faint)">(BYOK)</span></label>
+          <input id="byok-input" type="password" placeholder="sk-or-…" autocomplete="off" spellcheck="false" />
           <div class="btn-row">
             <button class="btn green" id="byok-save">Save</button>
             <button class="btn red" id="byok-forget">Forget</button>
@@ -481,7 +481,7 @@
       </div>
 
       <div class="card">
-        <h2>Live feed <span class="spacer" style="flex:1"></span><button class="log-clear" id="log-clear" title="Clear saved log">clear ✕</button></h2>
+        <h2>Live feed <span class="spacer" style="flex:1"></span><button class="log-clear" id="log-clear" title="Clear the agent log">🗑 Clear log</button></h2>
         <p class="lead">Every loop step — probe, policy decision, sign, settled, unlock. History is kept across runs (last 200 events) and survives a reload.</p>
         <div id="stream" class="stream"></div>
       </div>
@@ -524,71 +524,62 @@
   const byokInput = $("byok-input");
   const byokStatus = $("byok-status");
 
-  // ---------- AI model (gateway catalog) + BYOK keys ----------
-  const PROVIDER_META = {
-    anthropic: { label: "Anthropic", placeholder: "sk-ant-api03-…", console: "console.anthropic.com", url: "https://console.anthropic.com/settings/keys", limit: "set a Workspace spend limit" },
-    openai: { label: "OpenAI", placeholder: "sk-proj-…", console: "platform.openai.com", url: "https://platform.openai.com/api-keys", limit: "create a Restricted key + set a project budget limit" },
-    google: { label: "Google", placeholder: "AIzaSy…", console: "aistudio.google.com", url: "https://aistudio.google.com/apikey", limit: "restrict the key + set a Cloud quota/budget" },
-    "x-ai": { label: "xAI (Grok)", placeholder: "xai-…", console: "console.x.ai", url: "https://console.x.ai", limit: "set a team spend limit" },
-    meta: { label: "Meta / Llama", placeholder: "(gateway key)", console: "openrouter.ai", url: "https://openrouter.ai/keys", limit: "set a credit limit" },
-  };
-  function providerMeta(id) { return PROVIDER_META[id] || PROVIDER_META.anthropic; }
-  function providerOf(modelId) { return (modelId || "").split("/")[0] || "anthropic"; }
+  // ---------- BYOK: a single OpenRouter key (one key, every model) ----------
+  const KEY_STORE = "leash.openrouter_key";
+  const MODEL_STORE = "leash.model";   // selected gateway model id
+  const CHAIN_STORE = "leash.chain";   // selected settlement chain
 
-  const KEYS_STORE = "leash.byok.keys";   // JSON map { provider: key }
-  const MODEL_STORE = "leash.model";      // selected gateway model id
-  const CHAIN_STORE = "leash.chain";      // selected settlement chain
-  const LEGACY_KEY = "leash.anthropic_key";
-
-  function getKeys() {
-    try { return JSON.parse(localStorage.getItem(KEYS_STORE) || "{}") || {}; }
-    catch { return {}; }
-  }
-  function setKeys(obj) { localStorage.setItem(KEYS_STORE, JSON.stringify(obj)); }
+  function getKey() { return localStorage.getItem(KEY_STORE) || ""; }
   (function migrate() {
-    const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy) {
-      const keys = getKeys();
-      if (!keys.anthropic) { keys.anthropic = legacy; setKeys(keys); }
-      localStorage.removeItem(LEGACY_KEY);
+    // Carry over an OpenRouter key from the old per-provider store; drop the rest
+    // (native provider keys no longer work — BYOK is OpenRouter-only).
+    if (!getKey()) {
+      try {
+        const old = JSON.parse(localStorage.getItem("leash.byok.keys") || "{}") || {};
+        const or = Object.values(old).find((v) => typeof v === "string" && v.startsWith("sk-or-"));
+        if (or) localStorage.setItem(KEY_STORE, or);
+      } catch (e) { /* ignore */ }
     }
+    localStorage.removeItem("leash.byok.keys");
+    localStorage.removeItem("leash.byok.provider");
+    localStorage.removeItem("leash.anthropic_key");
   })();
 
   let selectedModel = localStorage.getItem(MODEL_STORE) || null;
   let selectedChain = localStorage.getItem(CHAIN_STORE) || null;
-  let activeProvider = "anthropic";
 
   function refreshByokStatus() {
-    const meta = providerMeta(activeProvider);
-    const k = getKeys()[activeProvider];
+    const k = getKey();
     if (k) {
-      byokStatus.textContent = `✓ ${meta.label} key saved in this browser (${k.slice(0, 6)}…). Never sent to Leash storage.`;
+      byokStatus.textContent = `✓ OpenRouter key saved in this browser (${k.slice(0, 8)}…). Never sent to Leash storage.`;
       byokStatus.classList.add("set");
       byokInput.placeholder = "(saved — paste a new key to replace)";
     } else {
-      byokStatus.textContent = `No ${meta.label} key saved.`;
+      byokStatus.textContent = "No key saved.";
       byokStatus.classList.remove("set");
-      byokInput.placeholder = meta.placeholder;
+      byokInput.placeholder = "sk-or-…";
     }
   }
   function renderHint() {
-    const m = providerMeta(activeProvider);
     $("byok-hint").innerHTML =
-      `<b>Use a limited key.</b> Create a <em>new</em> ${m.label} key at ` +
-      `<a href="${m.url}" target="_blank" rel="noopener">${m.console}</a>, ` +
-      `${m.limit} ($5–$20). Revoke anytime — worst case is the cap.` +
-      `<span class="ex">Paste your <code>${m.placeholder}</code> ${m.label} key <b>or</b> an OpenRouter key <code>sk-or-…</code> (works for any model). The key stays in your browser, sent per-task, never stored on our server.</span>`;
+      `<b>One OpenRouter key covers every model.</b> Create one at ` +
+      `<a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>, ` +
+      `add a few dollars of credit and an optional spend limit. Revoke anytime.` +
+      `<span class="ex">Looks like <code>sk-or-…</code> · the key stays in your browser, sent per-task, never stored on our server.</span>`;
   }
   $("byok-save").addEventListener("click", () => {
     const v = byokInput.value.trim();
     if (!v) return;
-    const keys = getKeys(); keys[activeProvider] = v; setKeys(keys);
-    byokInput.value = ""; refreshByokStatus();
-  });
-  $("byok-forget").addEventListener("click", () => {
-    const keys = getKeys(); delete keys[activeProvider]; setKeys(keys);
+    localStorage.setItem(KEY_STORE, v);
+    byokInput.value = "";
     refreshByokStatus();
   });
+  $("byok-forget").addEventListener("click", () => {
+    localStorage.removeItem(KEY_STORE);
+    refreshByokStatus();
+  });
+  refreshByokStatus();
+  renderHint();
 
   // Model catalog from the gateway
   async function loadModels() {
@@ -604,8 +595,6 @@
         const fixed = $("model-fixed");
         fixed.hidden = false;
         fixed.innerHTML = `Model: <b style="color:var(--text)">${m ? m.label : selectedModel}</b> · set by host`;
-        activeProvider = providerOf(selectedModel);
-        refreshByokStatus(); renderHint();
         return;
       }
       $("model-block").hidden = false;
@@ -613,13 +602,9 @@
       if (!selectedModel || !models.some((m) => m.id === selectedModel)) selectedModel = data.default || (models[0] && models[0].id);
       $("model-select").innerHTML = models.map((m) =>
         `<option value="${m.id}" ${m.id === selectedModel ? "selected" : ""}>${m.label} · ${m.provider}</option>`).join("");
-      activeProvider = providerOf(selectedModel);
-      refreshByokStatus(); renderHint();
       $("model-select").addEventListener("change", (e) => {
         selectedModel = e.target.value;
         localStorage.setItem(MODEL_STORE, selectedModel);
-        activeProvider = providerOf(selectedModel);
-        byokInput.value = ""; refreshByokStatus(); renderHint();
       });
     } catch (e) { /* gateway unavailable */ }
   }
@@ -1099,7 +1084,7 @@
     const query = ($("task-input").value || "compare AI coding tools 2026").trim();
     const model = selectedModel;
     const chain = selectedChain;
-    const apiKey = getKeys()[providerOf(model)] || undefined;
+    const apiKey = getKey() || undefined;
 
     // Min/max from the Policy card → drops. Sent to the real policy engine.
     const xrpToDrops = (el) => {

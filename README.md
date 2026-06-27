@@ -24,7 +24,7 @@ npm run web                # opens at http://localhost:8080
 ```
 
 Open http://localhost:8080 in your browser:
-1. Pick **run mode** — **Agent** (Demo = deterministic / Live = real AI reasoning, needs a key) and **Money** (Demo = simulated settlement / Live = real on-chain testnet payment). The policy engine, approvals, and kill switch stay real in every mode. Then pick a **model** + **settlement chain**, and optionally paste a BYOK key (browser `localStorage` only).
+1. Pick **run mode** — **Agent** (Demo = deterministic / Live = real AI reasoning, needs a key) and **Money** (Demo = simulated settlement / Live = real on-chain testnet payment). The policy engine, approvals, and kill switch stay real in every mode. Then pick a **model** + **settlement chain**, and optionally paste an **OpenRouter key** (`sk-or-…` — one key covers every model; browser `localStorage` only).
 2. Set the **policy band** — auto-pay ≤ min, block > max; in between needs your approval.
 3. Type a query and click **▶ Launch Agent**.
 4. Watch the live feed: probe → policy → sign → ✅ TX SETTLED (real explorer link).

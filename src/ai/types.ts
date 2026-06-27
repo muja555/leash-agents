@@ -4,12 +4,9 @@
  * deterministic and only the model catalog is consumed (by the UI dropdown).
  */
 export interface AiModel {
-  id: string; // gateway (OpenRouter) model id, e.g. "anthropic/claude-haiku-4.5"
-  native: string; // provider-native id, e.g. "claude-haiku-4-5" (for direct BYOK)
+  id: string; // OpenRouter model id, e.g. "anthropic/claude-haiku-4.5"
   label: string; // human label, e.g. "Claude Haiku 4.5"
   provider: string; // "anthropic" | "openai" | "google" | "x-ai" | "meta"
-  /** Only reachable via OpenRouter (no single native API), e.g. meta/llama. */
-  openrouterOnly?: boolean;
   /** Rough $/1M tokens (input/output) — for credit pricing + display. */
   inUsdPerMTok: number;
   outUsdPerMTok: number;
