@@ -68,7 +68,7 @@ export async function startWeb(): Promise<void> {
       ? (body.provider as AiProvider)
       : "anthropic";
     const apiKey = body.apiKey ?? body.anthropicKey;
-    const model = body.model ?? config.ai.defaultModel;
+    const model = body.model || undefined; // app never substitutes a model
     const chain = resolveChain(body.chain);
     void provider; // legacy field — provider is now derived from the model id
 
@@ -163,13 +163,7 @@ export async function startWeb(): Promise<void> {
   // GET /api/models — the AI model catalog ("AI tokens" users can pick)
   app.get("/api/models", (_req, res) => {
     const gw = getGateway();
-    res.json({
-      gateway: gw.id,
-      gatewayReady: gw.enabled,
-      pickerEnabled: config.ai.modelPicker,
-      default: config.ai.defaultModel,
-      models: gw.listModels(),
-    });
+    res.json({ gateway: gw.id, gatewayReady: gw.enabled, models: gw.listModels() });
   });
 
   // GET /api/credits — prepaid balance (BYOK mode when disabled)

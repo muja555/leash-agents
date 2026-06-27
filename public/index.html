@@ -417,10 +417,9 @@
           <label for="model-select">Model</label>
           <select id="model-select"></select>
         </div>
-        <div class="byok-status" id="model-fixed" hidden></div>
         <div id="byok-block">
           <label for="byok-input">OpenRouter key <span style="text-transform:none;letter-spacing:0;color:var(--faint)">(BYOK)</span></label>
-          <input id="byok-input" type="password" placeholder="sk-or-…" autocomplete="off" spellcheck="false" />
+          <input id="byok-input" type="password" autocomplete="off" spellcheck="false" />
           <div class="btn-row">
             <button class="btn green" id="byok-save">Save</button>
             <button class="btn red" id="byok-forget">Forget</button>
@@ -553,11 +552,9 @@
     if (k) {
       byokStatus.textContent = `✓ OpenRouter key saved in this browser (${k.slice(0, 8)}…). Never sent to Leash storage.`;
       byokStatus.classList.add("set");
-      byokInput.placeholder = "(saved — paste a new key to replace)";
     } else {
       byokStatus.textContent = "No key saved.";
       byokStatus.classList.remove("set");
-      byokInput.placeholder = "sk-or-…";
     }
   }
   function renderHint() {
@@ -581,30 +578,21 @@
   refreshByokStatus();
   renderHint();
 
-  // Model catalog from the gateway
+  // Model catalog from the gateway. The app never decides the model — the
+  // dropdown starts on a neutral "select a model" until the user chooses.
   async function loadModels() {
     try {
       const data = await fetch("/api/models").then((r) => r.json());
       const models = data.models || [];
-      const pickerEnabled = !!data.pickerEnabled;
-      if (!pickerEnabled) {
-        // BYOK-only: hide the dropdown, lock to the host's default model.
-        selectedModel = data.default || (models[0] && models[0].id);
-        const m = models.find((x) => x.id === selectedModel);
-        $("model-block").hidden = true;
-        const fixed = $("model-fixed");
-        fixed.hidden = false;
-        fixed.innerHTML = `Model: <b style="color:var(--text)">${m ? m.label : selectedModel}</b> · set by host`;
-        return;
-      }
-      $("model-block").hidden = false;
-      $("model-fixed").hidden = true;
-      if (!selectedModel || !models.some((m) => m.id === selectedModel)) selectedModel = data.default || (models[0] && models[0].id);
-      $("model-select").innerHTML = models.map((m) =>
-        `<option value="${m.id}" ${m.id === selectedModel ? "selected" : ""}>${m.label} · ${m.provider}</option>`).join("");
+      if (selectedModel && !models.some((m) => m.id === selectedModel)) selectedModel = null;
+      const opts = [`<option value="" ${selectedModel ? "" : "selected"}>Select a model…</option>`]
+        .concat(models.map((m) =>
+          `<option value="${m.id}" ${m.id === selectedModel ? "selected" : ""}>${m.label} · ${m.provider}</option>`));
+      $("model-select").innerHTML = opts.join("");
       $("model-select").addEventListener("change", (e) => {
-        selectedModel = e.target.value;
-        localStorage.setItem(MODEL_STORE, selectedModel);
+        selectedModel = e.target.value || null;
+        if (selectedModel) localStorage.setItem(MODEL_STORE, selectedModel);
+        else localStorage.removeItem(MODEL_STORE);
       });
     } catch (e) { /* gateway unavailable */ }
   }
@@ -1085,6 +1073,12 @@
     const model = selectedModel;
     const chain = selectedChain;
     const apiKey = getKey() || undefined;
+
+    // The app never picks a model: a live agent run requires the user to choose one.
+    if (liveAgent && !model) {
+      bubble("error", "Select a model first — the live agent needs one (or switch Agent to Demo).");
+      return;
+    }
 
     // Min/max from the Policy card → drops. Sent to the real policy engine.
     const xrpToDrops = (el) => {

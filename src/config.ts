@@ -73,16 +73,12 @@ export const config = {
     default: env("DEFAULT_CHAIN", "xrpl"),
   },
   // ----- AI model gateway (the "AI tokens" users spend) -----
-  // One integration → many models, resold at a markup. BYOK still works as a
-  // fallback per request. Wire OPENROUTER_API_KEY to make completions real (M3).
+  // One OpenRouter integration → every model. The app never picks a model:
+  // the user always chooses it in the UI. No default, no host lock.
   ai: {
     gateway: env("AI_GATEWAY", "openrouter"),
     openrouterKey: envOpt("OPENROUTER_API_KEY"),
-    defaultModel: env("AI_DEFAULT_MODEL", "anthropic/claude-haiku-4.5"),
     markupBps: envInt("AI_MARKUP_BPS", 2000), // 2000 bps = 20% markup on inference
-    // Show the model dropdown. Default true — one OpenRouter BYOK key reaches
-    // every model, so the user picks. Set false to lock to AI_DEFAULT_MODEL.
-    modelPicker: envBool("AI_MODEL_PICKER", true),
   },
   // ----- Prepaid credits (USD-denominated, non-custodial AI billing) -----
   // Disabled by default → BYOK mode. Enable + back with a real ledger to bill.

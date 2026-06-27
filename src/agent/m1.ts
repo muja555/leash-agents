@@ -252,11 +252,14 @@ export async function runM1(
   // Without one, the agent stays deterministic and the raw results stand.
   const gateway = getGateway();
   const haveAi = Boolean(args.aiKey) || gateway.enabled;
+  const model = args.model; // never defaulted — the user chooses the model
   if (liveAgent && !haveAi) {
-    await emit({ type: "thinking", text: "live agent selected but no AI key — paste a key (or an sk-or- key) to enable reasoning." });
+    await emit({ type: "thinking", text: "live agent selected but no AI key — paste an OpenRouter key (sk-or-…) to enable reasoning." });
   }
-  if (liveAgent && haveAi) {
-    const model = args.model ?? config.ai.defaultModel;
+  if (liveAgent && haveAi && !model) {
+    await emit({ type: "thinking", text: "live agent selected but no model chosen — pick a model to enable reasoning." });
+  }
+  if (liveAgent && haveAi && model) {
     try {
       await emit({ type: "thinking", text: `reading ${data.results.length} paid sources with ${model}…` });
       const prompt =
