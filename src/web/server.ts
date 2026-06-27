@@ -31,6 +31,8 @@ interface ApiTaskBody {
   maxDrops?: number; // per-payment cap (perTxCapDrops)
   chain?: string; // settlement chain id (xrpl | solana | base | …)
   model?: string; // AI gateway model id (used by the M3 reasoning step)
+  liveAgent?: boolean; // true = real AI reasoning; false = deterministic demo
+  liveMoney?: boolean; // true = real on-chain payment; false = simulated demo
 }
 
 /** Coerce a body value to a positive integer number of drops, else undefined. */
@@ -108,6 +110,8 @@ export async function startWeb(): Promise<void> {
         model,
         aiKey: apiKey,
         userId: DEMO_USER,
+        liveAgent: body.liveAgent !== false, // default live
+        liveMoney: body.liveMoney !== false, // default live
         policy: { approvalThresholdDrops, perTxCapDrops },
         isHalted, // server-side kill switch — refused mid-run
         requestApproval: async (info) => {

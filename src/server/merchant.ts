@@ -7,6 +7,14 @@ import { getClient, loadOrFundWallet } from "../xrpl/client.js";
 const SERVICE = "leash:research";
 const NONCE_TTL_MS = 10 * 60 * 1000;
 
+function resultsFor(query: string): string[] {
+  return (
+    CANNED_RESEARCH[query] ?? [
+      `(canned) No prepared dataset for "${query}". This stub proves the direct-XRPL → data round trip.`,
+    ]
+  );
+}
+
 const CANNED_RESEARCH: Record<string, string[]> = {
   "compare AI coding tools 2026": [
     "Cursor leads with native MCP + multi-model routing; Claude Code's Sonnet 4.6 mode is preferred for refactors per recent dev polls.",
@@ -172,9 +180,7 @@ async function verifyAndUnlock(
   pending.delete(memo);
   const ledger = tx.ledger_index ?? tx.inLedger ?? -1;
 
-  const results = CANNED_RESEARCH[query] ?? [
-    `(canned) No prepared dataset for "${query}". This stub proves the direct-XRPL → data round trip.`,
-  ];
+  const results = resultsFor(query);
 
   res.set("X-XRPL-Tx-Hash", txHash);
   res.set("X-XRPL-Ledger-Index", String(ledger));
@@ -198,6 +204,18 @@ export async function buildMerchantApp(): Promise<{ app: Express; payTo: string 
   app.get("/research", async (req: Request, res: Response) => {
     const txHash = typeof req.query.tx === "string" ? req.query.tx : null;
     const query = typeof req.query.q === "string" ? req.query.q : config.agent.query;
+    // Demo-money mode: serve results without an on-chain payment proof. The
+    // policy engine still runs agent-side; this only skips real settlement.
+    if (req.query.demo === "1") {
+      res.json({
+        query,
+        service: SERVICE,
+        results: resultsFor(query),
+        paymentProof: { hash: "demo", ledgerIndex: 0, amountDrops: "0", simulated: true },
+        ts: new Date().toISOString(),
+      });
+      return;
+    }
     if (!txHash) {
       issue402(res, payTo);
       return;

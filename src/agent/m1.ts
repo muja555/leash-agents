@@ -65,6 +65,10 @@ export interface RunM1Args {
   userId?: string;
   /** Per-run min/max overrides from the caller; applied in the policy engine. */
   policy?: PolicyOverrides;
+  /** Agent mode: live = call the AI to reason; demo = deterministic. Default true. */
+  liveAgent?: boolean;
+  /** Money mode: live = real on-chain payment; demo = simulated settlement. Default true. */
+  liveMoney?: boolean;
   /**
    * Gate 6 made tactile: when the policy returns `ask_human`, the loop pauses
    * and awaits this. Resolve "approve" to release the signature, "deny" to
@@ -94,7 +98,24 @@ export async function runM1(
   const policy = buildPolicy(args.policy);
   const chain = resolveChain(args.chain);
   const adapter = getAdapter(chain);
+  const liveMoney = args.liveMoney !== false; // default true (real on-chain)
+  const liveAgent = args.liveAgent !== false; // default true (real AI reasoning)
   let spend = freshSpendState();
+
+  // Settle a payment: a real on-chain tx in live-money mode, or a marked
+  // simulation in demo-money mode (policy gates still ran upstream either way).
+  const settle = async (
+    destination: string,
+    amount: string,
+    memo: string,
+  ): Promise<{ hash: string; ledgerIndex: number; explorer: string; simulated: boolean }> => {
+    if (liveMoney) {
+      const r = await adapter.sendPayment({ destination, amount, memo });
+      return { hash: r.hash, ledgerIndex: r.ledgerIndex, explorer: r.explorer, simulated: false };
+    }
+    const hash = `DEMO-${Date.now().toString(16)}-${Math.floor(Math.random() * 1e6).toString(16)}`;
+    return { hash, ledgerIndex: 0, explorer: "", simulated: true };
+  };
 
   // Re-read the kill switch and fold it into gate 1 before every evaluate/sign.
   const refreshHalt = (): void => {
@@ -193,17 +214,17 @@ export async function runM1(
   }
 
   // ----- 3. Load (or auto-fund) the agent wallet on the chosen chain -----
-  const { address } = await adapter.loadAgentWallet();
-  await emit({ type: "wallet_loaded", address });
+  if (liveMoney) {
+    const { address } = await adapter.loadAgentWallet();
+    await emit({ type: "wallet_loaded", address });
+  } else {
+    await emit({ type: "wallet_loaded", address: "(demo money — no on-chain wallet)" });
+  }
 
   // ----- 4. Sign + submit the Payment with the memo binding it to the 402 -----
   await haltGuard();
   await emit({ type: "signing", amountDrops, destination: req402.payTo, kind: "merchant" });
-  const payment = await adapter.sendPayment({
-    destination: req402.payTo,
-    amount: req402.amountDrops,
-    memo: req402.memo,
-  });
+  const payment = await settle(req402.payTo, req402.amountDrops, req402.memo);
   const explorer = payment.explorer;
   await emit({
     type: "settled",
@@ -213,14 +234,15 @@ export async function runM1(
     kind: "merchant",
     amountDrops,
     chain,
+    simulated: payment.simulated,
   });
 
-  // ----- 5. Retry the request with ?tx=<hash> — merchant verifies on ledger -----
-  const retryUrl = `${url}&tx=${payment.hash}`;
+  // ----- 5. Unlock the data. Live: prove the tx on-ledger. Demo: skip proof. -----
+  const retryUrl = liveMoney ? `${url}&tx=${payment.hash}` : `${url}&demo=1`;
   const retry = await fetch(retryUrl, { method: "GET", headers: { accept: "application/json" } });
   if (!retry.ok) {
     const body = await retry.text();
-    throw new Error(`merchant rejected proof: HTTP ${retry.status} — ${body}`);
+    throw new Error(`merchant rejected request: HTTP ${retry.status} — ${body}`);
   }
   const data = (await retry.json()) as { query: string; results: string[] };
   await emit({ type: "unlocked", query: data.query, results: data.results });
@@ -230,7 +252,10 @@ export async function runM1(
   // Without one, the agent stays deterministic and the raw results stand.
   const gateway = getGateway();
   const haveAi = Boolean(args.aiKey) || gateway.enabled;
-  if (haveAi) {
+  if (liveAgent && !haveAi) {
+    await emit({ type: "thinking", text: "live agent selected but no AI key — paste a key (or an sk-or- key) to enable reasoning." });
+  }
+  if (liveAgent && haveAi) {
     const model = args.model ?? config.ai.defaultModel;
     try {
       await emit({ type: "thinking", text: `reading ${data.results.length} paid sources with ${model}…` });
@@ -275,11 +300,11 @@ export async function runM1(
       destination: feeRequest.destination,
       kind: "fee",
     });
-    const feePayment = await adapter.sendPayment({
-      destination: feeRequest.destination,
-      amount: String(feeRequest.amountDrops),
-      memo: `leash-fee:${req402.nonce}`,
-    });
+    const feePayment = await settle(
+      feeRequest.destination,
+      String(feeRequest.amountDrops),
+      `leash-fee:${req402.nonce}`,
+    );
     const feeExplorer = feePayment.explorer;
     await emit({
       type: "settled",
@@ -289,6 +314,7 @@ export async function runM1(
       kind: "fee",
       amountDrops: feeRequest.amountDrops,
       chain,
+      simulated: feePayment.simulated,
     });
     spend = recordSpend(spend, feeRequest);
     await appendPayment({

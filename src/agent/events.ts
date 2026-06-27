@@ -33,6 +33,7 @@ export type AgentEvent =
       kind?: "merchant" | "fee";
       amountDrops?: number;
       chain?: string;
+      simulated?: boolean; // demo-money mode: no real on-chain tx
     }
   | {
       type: "approval_request";

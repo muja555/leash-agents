@@ -197,6 +197,20 @@
   .seg button[disabled]{opacity:.45; cursor:not-allowed;}
   .seg button .soon{font-size:8.5px; color:var(--faint); margin-left:5px; letter-spacing:.06em;}
 
+  /* run-mode toggles (Agent / Money: Demo | Live) */
+  .modes{display:flex; flex-direction:column; gap:9px; margin:2px 0 4px;}
+  .mode-row{display:flex; align-items:center; gap:11px;}
+  .mode-row .mode-k{font-family:'JetBrains Mono'; font-size:12px; color:var(--text); width:52px;}
+  .tg{display:inline-flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; background:rgba(11,14,19,.6);}
+  .tg button{font-family:'JetBrains Mono'; font-size:11px; padding:6px 13px; border:0; background:transparent;
+    color:var(--muted); cursor:pointer; letter-spacing:.04em; transition:all .12s;}
+  .tg button[aria-pressed="true"]{color:var(--text);}
+  .tg button[data-v="demo"][aria-pressed="true"]{background:var(--blue-dim); color:var(--blue);}
+  .tg button[data-v="live"][aria-pressed="true"]{background:var(--green-dim); color:var(--green);}
+  .tg.warn button[data-v="live"][aria-pressed="true"]{background:var(--gold-dim); color:var(--gold);}
+  .mode-hint{font-family:'JetBrains Mono'; font-size:10.5px; color:var(--faint);}
+  .mode-hint.warn{color:var(--gold);}
+
   /* BYOK status */
   .byok-status{font-family:'JetBrains Mono'; font-size:11.5px; margin-top:13px;
     padding:10px 12px; border-radius:10px; background:rgba(11,14,19,.6); color:var(--muted);
@@ -433,7 +447,24 @@
     <div>
       <div class="card">
         <h2>Delegate a task</h2>
-        <p class="lead">The agent pays per use to unlock paid research data, with the policy engine gating every payment. Choose the settlement chain.</p>
+        <p class="lead">The agent pays per use to unlock paid research data, with the policy engine gating every payment. Pick run mode + settlement chain.</p>
+        <label>Run mode</label>
+        <div class="modes">
+          <div class="mode-row">
+            <span class="mode-k">Agent</span>
+            <div class="tg" id="agent-tg" role="group" aria-label="Agent mode">
+              <button type="button" data-v="demo">Demo</button><button type="button" data-v="live">Live</button>
+            </div>
+            <span class="mode-hint" id="agent-hint"></span>
+          </div>
+          <div class="mode-row">
+            <span class="mode-k">Money</span>
+            <div class="tg" id="money-tg" role="group" aria-label="Money mode">
+              <button type="button" data-v="demo">Demo</button><button type="button" data-v="live">Live</button>
+            </div>
+            <span class="mode-hint" id="money-hint"></span>
+          </div>
+        </div>
         <label>Settlement chain</label>
         <div class="seg" id="chain-seg" role="group" aria-label="Settlement chain"></div>
         <label for="task-input">Query</label>
@@ -637,6 +668,33 @@
   loadModels();
   loadCredits();
   loadChains();
+
+  // ---------- Run mode (Agent / Money: demo | live) ----------
+  const MODE_STORE = "leash.modes";
+  let liveAgent = false; // default: deterministic agent (no key needed)
+  let liveMoney = true;  // default: real on-chain testnet payment (the showcase)
+  try {
+    const m = JSON.parse(localStorage.getItem(MODE_STORE) || "{}");
+    if (typeof m.agent === "boolean") liveAgent = m.agent;
+    if (typeof m.money === "boolean") liveMoney = m.money;
+  } catch (e) { /* defaults */ }
+  function saveModes() { localStorage.setItem(MODE_STORE, JSON.stringify({ agent: liveAgent, money: liveMoney })); }
+  function renderModes() {
+    $("agent-tg").querySelectorAll("button").forEach((b) =>
+      b.setAttribute("aria-pressed", String((b.dataset.v === "live") === liveAgent)));
+    $("money-tg").querySelectorAll("button").forEach((b) =>
+      b.setAttribute("aria-pressed", String((b.dataset.v === "live") === liveMoney)));
+    $("money-tg").classList.toggle("warn", liveMoney);
+    $("agent-hint").textContent = liveAgent ? "real AI — needs a key" : "deterministic · no key";
+    const mh = $("money-hint");
+    mh.textContent = liveMoney ? "⚠ real testnet payment" : "simulated · no on-chain tx";
+    mh.classList.toggle("warn", liveMoney);
+  }
+  $("agent-tg").querySelectorAll("button").forEach((b) =>
+    b.addEventListener("click", () => { liveAgent = b.dataset.v === "live"; saveModes(); renderModes(); }));
+  $("money-tg").querySelectorAll("button").forEach((b) =>
+    b.addEventListener("click", () => { liveMoney = b.dataset.v === "live"; saveModes(); renderModes(); }));
+  renderModes();
 
   // ---------- Kill switch (wired through the server-side policy engine) ----------
   let halted = false;
@@ -980,14 +1038,19 @@
         return bubble("signing",
           `✍️ signing + broadcasting ${e.kind === "fee" ? "the fee" : "Payment"} on testnet…`);
       case "settled": {
-        const label = e.kind === "fee" ? "FEE SETTLED" : "TX SETTLED";
+        const base = e.kind === "fee" ? "FEE" : "TX";
+        const label = e.simulated ? `${base} SIMULATED` : `${base} SETTLED`;
         const amt = e.amountDrops != null ? ` · ${dropsToXrp(e.amountDrops)} XRP` : "";
         const chainTag = e.chain ? ` <span style="color:var(--faint)">[${escapeHtml(e.chain)}]</span>` : "";
+        const tag = e.simulated ? ` <span style="color:var(--blue)">[demo]</span>` : "";
+        const explorerBtn = e.explorer && !e.simulated
+          ? `<a class="btn blue explorer" target="_blank" rel="noopener" href="${escapeHtml(e.explorer)}">View on Explorer ↗</a>`
+          : "";
         return bubble("settled",
-          `✅ <b>${label}</b>${amt}${chainTag}<br>
-          • ledger: ${e.ledgerIndex}<br>
+          `✅ <b>${label}</b>${amt}${chainTag}${tag}<br>
+          ${e.simulated ? "" : `• ledger: ${e.ledgerIndex}<br>`}
           • hash: <code>${escapeHtml(e.hash)}</code>
-          <a class="btn blue explorer" target="_blank" rel="noopener" href="${escapeHtml(e.explorer)}">View on Explorer ↗</a>`);
+          ${explorerBtn}`);
       }
       case "approval_request":
         showApproval(e);
@@ -1055,7 +1118,7 @@
       const resp = await fetch("/api/task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, model, chain, apiKey, minDrops, maxDrops }),
+        body: JSON.stringify({ query, model, chain, apiKey, minDrops, maxDrops, liveAgent, liveMoney }),
       });
       if (!resp.body) throw new Error("no response body");
       const reader = resp.body.getReader();
