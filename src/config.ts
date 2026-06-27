@@ -80,9 +80,9 @@ export const config = {
     openrouterKey: envOpt("OPENROUTER_API_KEY"),
     defaultModel: env("AI_DEFAULT_MODEL", "anthropic/claude-haiku-4.5"),
     markupBps: envInt("AI_MARKUP_BPS", 2000), // 2000 bps = 20% markup on inference
-    // When false (default), the UI hides the model dropdown and the agent uses
-    // defaultModel — BYOK is the only path. Flip true to let users pick a model.
-    modelPicker: envBool("AI_MODEL_PICKER", false),
+    // Show the model dropdown. Default true — one OpenRouter BYOK key reaches
+    // every model, so the user picks. Set false to lock to AI_DEFAULT_MODEL.
+    modelPicker: envBool("AI_MODEL_PICKER", true),
   },
   // ----- Prepaid credits (USD-denominated, non-custodial AI billing) -----
   // Disabled by default → BYOK mode. Enable + back with a real ledger to bill.
