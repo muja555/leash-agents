@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leash — Demo Readiness & Test Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#0B0E13;--panel:#141A22;--line:#28323E;--line-soft:#1F2832;--text:#EAF0F7;--muted:#94A2B3;--faint:#5F6C7D;--gold:#E8B23A;--green:#41C46B;--red:#EB5757;--blue:#5C9CFF;--violet:#9B7BFF;--card:linear-gradient(180deg,#1A222D,#141A22);}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ink);color:var(--text);font-family:'Inter',system-ui,sans-serif;line-height:1.6;font-size:15px;-webkit-font-smoothing:antialiased;background-image:radial-gradient(1100px 560px at 85% -12%,rgba(92,156,255,.10),transparent 60%),radial-gradient(820px 460px at 0% -4%,rgba(232,178,58,.07),transparent 55%);background-attachment:fixed;}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 24px 100px;}
+  header{padding:46px 0 26px;border-bottom:1px solid var(--line-soft);margin-bottom:30px;}
+  .kick{font-family:'JetBrains Mono';font-size:11px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin-bottom:14px;}
+  h1{font-family:'Space Grotesk';font-weight:700;font-size:clamp(28px,5vw,42px);line-height:1.05;letter-spacing:-.03em;margin:0 0 16px;background:linear-gradient(180deg,#fff,#B9C6D6);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .sub{font-size:16px;color:var(--muted);max-width:760px;margin:0;}
+  .meta{font-family:'JetBrains Mono';font-size:11.5px;color:var(--faint);margin-top:18px;}
+  h2{font-family:'Space Grotesk';font-weight:600;font-size:23px;letter-spacing:-.02em;margin:46px 0 8px;display:flex;align-items:center;gap:12px;}
+  h2 .n{font-family:'JetBrains Mono';font-size:13px;color:var(--gold);border:1px solid var(--line);border-radius:8px;padding:3px 9px;font-weight:500;}
+  h3{font-family:'Space Grotesk';font-weight:600;font-size:16px;margin:22px 0 6px;}
+  p{margin:10px 0;color:#D5DEE9;}
+  .lead{color:var(--muted);font-size:14px;margin-top:0;}
+  a{color:var(--blue);text-decoration:none;border-bottom:1px solid rgba(92,156,255,.3);}
+  b{color:#fff;font-weight:600;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:16px 0;box-shadow:0 18px 40px -28px rgba(0,0,0,.8);}
+  ul{margin:8px 0;padding-left:20px;color:#D5DEE9;}li{margin-bottom:7px;}li::marker{color:var(--faint);}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
+  th{font-family:'JetBrains Mono';font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line);}
+  tbody tr:hover{background:rgba(255,255,255,.02);}
+  .s{font-family:'JetBrains Mono';font-size:10px;padding:2px 8px;border-radius:6px;white-space:nowrap;}
+  .ok{background:rgba(65,196,107,.12);color:var(--green);} .part{background:rgba(232,178,58,.12);color:var(--gold);} .no{background:rgba(235,87,87,.12);color:var(--red);} .blu{background:rgba(92,156,255,.12);color:var(--blue);}
+  .callout{border-left:3px solid var(--gold);background:rgba(232,178,58,.05);border-radius:0 12px 12px 0;padding:14px 18px;margin:18px 0;}
+  .callout.green{border-color:var(--green);background:rgba(65,196,107,.05);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}@media(max-width:760px){.grid2{grid-template-columns:1fr;}}
+  .check{list-style:none;padding-left:0;}
+  .check li{position:relative;padding-left:26px;margin-bottom:9px;}
+  .check li::before{content:"☐";position:absolute;left:0;color:var(--faint);font-size:15px;}
+  .check li.done::before{content:"☑";color:var(--green);}
+  .step{display:flex;gap:14px;margin:12px 0;}
+  .step .num{flex:none;width:26px;height:26px;border-radius:8px;background:rgba(92,156,255,.12);color:var(--blue);font-family:'JetBrains Mono';font-size:13px;display:grid;place-items:center;}
+  .step .body{flex:1;}
+  code{font-family:'JetBrains Mono';font-size:12px;color:var(--gold);background:rgba(232,178,58,.08);padding:1px 5px;border-radius:4px;}
+  footer{margin-top:50px;padding-top:22px;border-top:1px solid var(--line-soft);font-family:'JetBrains Mono';font-size:11px;color:var(--faint);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kick">Leash · Demo Readiness &amp; Test Plan</div>
+  <h1>From "it works" to "announce it"</h1>
+  <p class="sub">Where the build stands, who it's for, the real-case scenario to demo, and the checklist that gates calling it a ready-to-use demo.</p>
+  <div class="meta">Prepared 2026-07-02 · testnet-only · non-custodial (locked decision)</div>
+</header>
+
+<div class="callout green">
+  <b>Core loop is real today.</b> Delegate a task + budget → the policy engine gates every payment → real XRPL testnet settlement → data unlocked → human keeps control (approve/deny + kill). Verified live: merchant tx <code>3AD7AF49…</code> + fee tx <code>C724D893…</code>, explorer-linked.
+</div>
+
+<!-- 1 -->
+<h2><span class="n">1</span> What's built &amp; verified</h2>
+<table>
+  <thead><tr><th>Capability</th><th>State</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td>Agent → policy → real testnet payment → unlock</td><td><span class="s ok">LIVE</span></td><td>real explorer links</td></tr>
+    <tr><td><b>Policy engine</b> — 6 gates (the differentiator)</td><td><span class="s ok">LIVE + TESTED</span></td><td>23 unit tests green</td></tr>
+    <tr><td>Approve / Deny modal (gate 6, tactile)</td><td><span class="s ok">LIVE</span></td><td>pauses run, resolves via API</td></tr>
+    <tr><td>Kill switch through the engine (in-flight refusal)</td><td><span class="s ok">LIVE</span></td><td>denies at halted gate</td></tr>
+    <tr><td>Platform fee (separate on-chain tx, non-custodial)</td><td><span class="s ok">LIVE</span></td><td>2nd settled tx/run</td></tr>
+    <tr><td>Run modes — Agent &amp; Money (demo / live)</td><td><span class="s ok">LIVE</span></td><td>all 4 combos verified</td></tr>
+    <tr><td>BYOK — OpenRouter, one key, user picks model</td><td><span class="s ok">LIVE</span></td><td>routing verified</td></tr>
+    <tr><td>Live feed (SSE) · persistent log · Result + export</td><td><span class="s ok">LIVE</span></td><td>—</td></tr>
+    <tr><td>Multi-chain (PaymentAdapter)</td><td><span class="s part">SCAFFOLD</span></td><td>XRPL live; SOL/Base/ETH stubs</td></tr>
+    <tr><td>AI reasoning (synthesis over paid data)</td><td><span class="s part">WIRED</span></td><td>needs 1 real-key run</td></tr>
+    <tr><td>Prepaid credits ledger</td><td><span class="s part">STUB</span></td><td>in-memory, off by default</td></tr>
+    <tr><td>Public deployment</td><td><span class="s no">MISSING</span></td><td>Docker + Render blueprint ready</td></tr>
+    <tr><td>Demo video</td><td><span class="s no">MISSING</span></td><td>human task</td></tr>
+  </tbody>
+</table>
+
+<!-- 2 -->
+<h2><span class="n">2</span> Roadmap status</h2>
+<div class="grid2">
+  <div class="card"><h3>M1 — thin slice <span class="s ok">DONE</span></h3><p style="margin:6px 0 0">One real testnet payment through the policy engine.</p></div>
+  <div class="card"><h3>M2 — web app <span class="s ok">DONE</span></h3><p style="margin:6px 0 0">Single-page UI, SSE live feed, same loop in the browser.</p></div>
+  <div class="card"><h3>M3 — human-in-loop + AI + wallet <span class="s ok">≈DONE</span></h3><p style="margin:6px 0 0">Approve/Deny, kill, /wallet, reasoning loop. One gap: a verified real-key AI completion.</p></div>
+  <div class="card"><h3>M4 — polish + OSS + video <span class="s part">IN PROGRESS</span></h3><p style="margin:6px 0 0">README, MIT license, specs, tests done. Missing: public deploy + video.</p></div>
+</div>
+
+<!-- 3 -->
+<h2><span class="n">3</span> Business · users · use-cases</h2>
+<div class="card">
+  <p><b>Business.</b> The <b>neutral, non-custodial control tower for AI agents that spend.</b> It rides the payment rails (x402 / settlement) and owns the layer rivals treat as an afterthought — <b>policy, human oversight, operator UX</b>. Non-custodial is locked (sidesteps money-transmitter licensing); monetization leans to a credits/SaaS model.</p>
+  <div class="grid2" style="margin-top:12px">
+    <div>
+      <h3>Users</h3>
+      <ul>
+        <li><b>Beachhead:</b> agent-payments builders who just realized "this agent can drain my wallet."</li>
+        <li><b>Economic buyer:</b> whoever gets blamed if an agent overspends — finance/ops, the solo founder, the agency owner.</li>
+        <li><b>Expansion:</b> non-crypto "agent ops" operators who want a dashboard, not an SDK.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Use-cases (most real first)</h3>
+      <ul>
+        <li>Agent <b>buys paid data / APIs per call</b> (the demo — canonical x402).</li>
+        <li>Autonomous <b>research / procurement</b> on a fixed budget.</li>
+        <li>Agent <b>buys compute/inference</b> metered against a cap.</li>
+        <li>Agent-to-agent micropayments (emerging).</li>
+      </ul>
+    </div>
+  </div>
+  <p style="margin-top:10px" class="lead">Job-to-be-done: <em>"Let an AI agent do work that costs money — without giving it unbounded access to my money."</em></p>
+</div>
+
+<!-- 4 -->
+<h2><span class="n">4</span> The real-case scenario to demo</h2>
+<div class="callout">
+  <b>"You're an analyst.</b> You delegate <em>'compare AI coding tools 2026'</em> to an agent with a 50 XRP budget — auto-pay under 0.1 XRP, block over 0.2. Watch it buy the data, settle on-chain, and hand you a sourced report — and prove you're in control."
+</div>
+<div class="card">
+  <div class="step"><div class="num">1</div><div class="body"><b>The happy path.</b> Money=Live, Agent=Live, paste an OpenRouter key, pick a model, band 0.1 / 0.2. Launch → feed streams probe → policy <b>allow</b> → <b>real settled tx</b> → unlocked → <b>AI synthesis</b> → complete. Click <b>View on Explorer</b>. <span class="lead">Proves the whole loop + on-chain proof.</span></div></div>
+  <div class="step"><div class="num">2</div><div class="body"><b>Human in the loop.</b> Set min = 0 (everything needs approval) → launch → <b>Approve/Deny modal</b> → Approve → settles. Re-run → Deny → refused, <b>no payment</b>. <span class="lead">Proves gate 6 is tactile and real.</span></div></div>
+  <div class="step"><div class="num">3</div><div class="body"><b>Kill switch.</b> Launch, hit <b>🛑 KILL</b> mid-run → policy refuses, <b>no signature</b>. <span class="lead">Proves the emergency control.</span></div></div>
+  <div class="step"><div class="num">4</div><div class="body"><b>The payoff.</b> Show the <b>Result panel</b> (report + cost breakdown + fee) and <b>Export</b>. <span class="lead">Proves the deliverable + transparency.</span></div></div>
+</div>
+
+<!-- 5 -->
+<h2><span class="n">5</span> Acceptance checklist — announce when all green</h2>
+<div class="card">
+  <ul class="check">
+    <li class="done">Policy engine has automated tests; <code>npm test</code> green (23 tests)</li>
+    <li class="done">Deploy config ready (Dockerfile + Render blueprint; PORT-aware)</li>
+    <li>Deployed to a <b>public URL</b>, loads clean, wallets pre-funded</li>
+    <li>Fresh visitor completes scenario step 1 (real tx + explorer) in <b>&lt;60s</b></li>
+    <li><b>Real AI synthesis</b> renders with a real OpenRouter key (not just routing)</li>
+    <li>Approve, Deny, and Kill each demonstrably change the on-chain outcome</li>
+    <li>Graceful empty/error states (wallet dry, merchant down, bad key)</li>
+    <li>60–90s <b>demo video</b> recorded</li>
+    <li>README "run in 2 minutes" + the public link</li>
+  </ul>
+</div>
+
+<div class="callout green">
+  <b>Shortest path to announceable:</b> (1) one real-key AI run → (2) ✅ policy tests → (3) push the Docker/Render deploy to a public URL → (4) record the 90-second video. Items 1, 3-deploy-click, and 4 need a human (a key, a hosting account, a screen recorder); everything else is done.
+</div>
+
+<footer>LEASH · demo readiness · non-custodial control tower for agents that pay · see also leash_app_spec.html · leash_user_journey.html · leash_competitor_analysis.html</footer>
+
+</div>
+</body>
+</html>

@@ -2,7 +2,7 @@
 
 > Control-tower for AI agents that **pay per use** on XRPL testnet. You delegate a task + budget; the policy engine gates every payment; you watch each one settle live with a real explorer link.
 
-> 📄 Specs in this repo: [`CLAUDE.md`](./CLAUDE.md) (canonical) · [`leash_app_spec.html`](./leash_app_spec.html) (visual) · [`leash_user_journey.html`](./leash_user_journey.html) (wireframes + flow) · [`leash_web_demo.html`](./leash_web_demo.html) (web app setup + walkthrough)
+> 📄 Specs in this repo: [`CLAUDE.md`](./CLAUDE.md) (canonical) · [`leash_app_spec.html`](./leash_app_spec.html) (visual) · [`leash_user_journey.html`](./leash_user_journey.html) (wireframes + flow) · [`leash_web_demo.html`](./leash_web_demo.html) (walkthrough) · [`leash_competitor_analysis.html`](./leash_competitor_analysis.html) (positioning) · [`leash_demo_readiness.html`](./leash_demo_readiness.html) (readiness + test plan)
 
 ## Status
 
@@ -11,7 +11,7 @@
 | **M1** — direct-XRPL thin slice | ✅ DONE 2026-06-17 | [tx `4B85617C…BCDE38`](https://testnet.xrpl.org/transactions/4B85617C1C393E97A72A9BDD81D34F5C8B718397DAEEDD397A5FD0912EBCDE38) |
 | **M2** — web app frontend | ✅ DONE | `npm run web` → http://localhost:8080 |
 | **M3** — Approve/Deny + Kill + Wallet + multi-chain/AI scaffold | ✅ DONE | live Approve/Deny modal, server-side kill switch, `/wallet` panel |
-| **M4** — polish + open-source + demo video | 🔵 in progress | README + MIT license done; demo video pending |
+| **M4** — polish + open-source + demo video | 🔵 in progress | README + MIT license + **23 policy/router tests** + Docker/Render deploy config done; public deploy + demo video pending |
 
 **Approach A (control plane over the rails)** is scaffolded so going live is config + one adapter: a chain-agnostic `PaymentAdapter` (XRPL live; Solana/Base/Ethereum stubs), an AI model **gateway** (OpenRouter — many models, one key), and **prepaid USD credits** (non-custodial). See [`leash_competitor_analysis.html`](./leash_competitor_analysis.html) for the positioning.
 
@@ -140,6 +140,33 @@ The agent loop, policy engine, wallet helpers, and event-sink abstraction are un
 | `GET` | `/api/wallet?chain=` | Agent wallet address + balance |
 | `POST` | `/api/faucet?chain=` | Top up the agent wallet from the testnet faucet |
 | `GET` | `/api/policy` · `/api/chains` · `/api/models` · `/api/credits` | Config the UI renders |
+
+## Test
+
+```bash
+npm test        # 23 tests — the six policy gates + spend tracking + BYOK routing
+npm run typecheck
+```
+
+The policy engine (`src/policy/engine.ts`) is the most important module, so it's the most tested: gate order, per-tx/daily/total caps, approval threshold, denylist/allowlist, and day-boundary spend resets (`tests/policy.test.ts`). BYOK routing is covered in `tests/router.test.ts`. Tests run on Node's built-in runner via `tsx` — no extra deps.
+
+## Deploy (public demo)
+
+Single container, one port (UI + merchant + APIs). Any Docker host works; a Render blueprint is included.
+
+```bash
+docker build -t leash . && docker run -p 8080:8080 leash   # local
+```
+
+**Render:** push the repo, "New → Blueprint", pick `render.yaml`. It builds the Dockerfile and injects `PORT` automatically. Set these in the dashboard for a stable, pre-funded demo (all optional — blank = auto-fund a fresh testnet wallet each boot):
+
+| Env | Purpose |
+|---|---|
+| `XRPL_AGENT_SEED` / `XRPL_MERCHANT_SEED` | reuse funded testnet wallets across restarts |
+| `LEASH_FEE_WALLET` | where the platform fee lands (blank = fee off) |
+| `OPENROUTER_API_KEY` | host key so live-agent runs work without the user pasting one |
+
+Full readiness + demo test plan: [`leash_demo_readiness.html`](./leash_demo_readiness.html).
 
 ## License
 

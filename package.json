@@ -8,7 +8,8 @@
     "m1": "tsx src/main.ts",
     "web": "tsx src/web/server.ts",
     "merchant": "tsx src/server/merchant.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

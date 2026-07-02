@@ -1,0 +1,23 @@
+# Render Blueprint — one-click deploy of the Leash demo.
+# Render injects PORT automatically. Set the secrets below in the dashboard
+# (or `render.yaml` env groups) so the demo wallet keeps its testnet balance
+# across restarts; leave them blank to auto-fund a fresh wallet each boot.
+services:
+  - type: web
+    name: leash-demo
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/policy
+    envVars:
+      # Testnet wallet seeds — set for a stable, pre-funded demo (else auto-funded).
+      - key: XRPL_AGENT_SEED
+        sync: false
+      - key: XRPL_MERCHANT_SEED
+        sync: false
+      # Where the platform fee lands (blank = fee off).
+      - key: LEASH_FEE_WALLET
+        sync: false
+      # Optional: a host OpenRouter key so live-agent runs work without the user
+      # pasting one. Leave blank for pure BYOK.
+      - key: OPENROUTER_API_KEY
+        sync: false

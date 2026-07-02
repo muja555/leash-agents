@@ -224,7 +224,8 @@ export async function startWeb(): Promise<void> {
     }
   });
 
-  const port = Number(process.env.WEB_PORT ?? config.merchant.port);
+  // Number("") is 0 (falsy) so an empty WEB_PORT falls through to PORT/8080.
+  const port = Number(process.env.WEB_PORT) || config.merchant.port;
   await new Promise<void>((resolve) => app.listen(port, resolve));
   console.log(`[web] open in your browser: http://localhost:${port}`);
   console.log(`[web] merchant payTo (testnet): ${payTo}`);
