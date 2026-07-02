@@ -280,6 +280,13 @@
   .secnote b{color:var(--red); font-weight:600;}
   .secnote a{color:var(--text); text-decoration:underline; text-underline-offset:2px;}
   .secnote a:hover{color:var(--blue);}
+  .infonote{background:rgba(92,156,255,.06); border:1px solid rgba(92,156,255,.2);
+    border-radius:12px; padding:12px 14px; margin-top:14px; font-size:12px; color:var(--muted);
+    line-height:1.55;}
+  .infonote b{color:var(--text); font-weight:600;}
+  .infonote .row{display:flex; gap:8px; margin-bottom:5px;}
+  .infonote .row:last-child{margin-bottom:0;}
+  .infonote .row span:first-child{color:var(--blue); flex:none;}
   .secnote code{font-family:'JetBrains Mono'; font-size:11px; color:var(--gold);
     background:rgba(232,178,58,.08); padding:1px 5px; border-radius:4px;}
   .secnote .ex{display:block; margin-top:8px; color:var(--faint); font-size:11.5px;}
@@ -437,8 +444,13 @@
 
       <div class="card">
         <h2>Wallet <span class="badge m3">M3</span></h2>
-        <p class="lead">The agent's <b style="color:var(--text)">own</b> wallet — non-custodial; Leash never holds it. Fund it from the testnet faucet.</p>
+        <p class="lead">This is <b style="color:var(--text)">your own</b> wallet — you fund it, you control it. <b style="color:var(--text)">It is not a deposit</b>: the money never goes to Leash, which never holds or moves it.</p>
         <div id="wallet"></div>
+        <div class="infonote">
+          <div class="row"><span>→</span><span><b>Fund it:</b> on testnet, top up free with the faucet button. In production you'd send crypto to this address yourself (or via an on-ramp).</span></div>
+          <div class="row"><span>→</span><span><b>Agent spends it:</b> per task, the agent pays merchants from this wallet — but only within the policy you set (caps, approvals, kill switch).</span></div>
+          <div class="row"><span>→</span><span><b>AI is billed separately:</b> the model runs on your OpenRouter key, not from this XRP balance.</span></div>
+        </div>
       </div>
     </div>
 
