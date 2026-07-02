@@ -6,6 +6,9 @@ import type { AiModel } from "./types.js";
  * returns real cost when it can.
  */
 export const MODEL_CATALOG: AiModel[] = [
+  // OpenRouter's Auto Router reads the prompt and picks a model for the task.
+  // Cost comes back from the gateway (usage.cost); estimates below are 0.
+  { id: "openrouter/auto", label: "Auto — best model for the task", provider: "openrouter", inUsdPerMTok: 0, outUsdPerMTok: 0 },
   { id: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5", provider: "anthropic", inUsdPerMTok: 1, outUsdPerMTok: 5 },
   { id: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6", provider: "anthropic", inUsdPerMTok: 3, outUsdPerMTok: 15 },
   { id: "openai/gpt-5-mini", label: "GPT-5 mini", provider: "openai", inUsdPerMTok: 1, outUsdPerMTok: 4 },
