@@ -452,6 +452,12 @@
           <div class="row"><span>→</span><span><b>AI is billed separately:</b> the model runs on your OpenRouter key, not from this XRP balance.</span></div>
         </div>
       </div>
+
+      <div class="card">
+        <h2>Credit line <span class="badge">GOVERNED</span></h2>
+        <p class="lead">An alternative funding source — the agent spends borrowed credit (a provider fronts settlement). <b style="color:var(--text)">The same policy engine governs it</b>: a credit limit is a fuse, Leash is the steering wheel.</p>
+        <div id="creditline"></div>
+      </div>
     </div>
 
     <!-- RIGHT COLUMN: task + live feed -->
@@ -481,6 +487,11 @@
         <label>Payment asset</label>
         <div class="seg" id="asset-seg" role="group" aria-label="Payment asset"></div>
         <span class="mode-hint" id="asset-hint" style="margin-top:6px;display:block"></span>
+        <label>Funding source</label>
+        <div class="seg" id="funding-seg" role="group" aria-label="Funding source">
+          <button type="button" data-funding="wallet">Own wallet</button><button type="button" data-funding="credit">Credit line</button>
+        </div>
+        <span class="mode-hint" id="funding-hint" style="margin-top:6px;display:block"></span>
         <label for="task-input">Query</label>
         <input id="task-input" type="text" placeholder="compare AI coding tools 2026" />
         <div class="btn-row">
@@ -541,8 +552,9 @@
   // ---------- BYOK: a single OpenRouter key (one key, every model) ----------
   const KEY_STORE = "leash.openrouter_key";
   const MODEL_STORE = "leash.model";   // selected gateway model id
-  const CHAIN_STORE = "leash.chain";   // selected settlement chain
-  const ASSET_STORE = "leash.asset";   // selected payment asset
+  const CHAIN_STORE = "leash.chain";     // selected settlement chain
+  const ASSET_STORE = "leash.asset";     // selected payment asset
+  const FUNDING_STORE = "leash.funding"; // wallet | credit
 
   function getKey() { return localStorage.getItem(KEY_STORE) || ""; }
   (function migrate() {
@@ -563,6 +575,7 @@
   let selectedModel = localStorage.getItem(MODEL_STORE) || null;
   let selectedChain = localStorage.getItem(CHAIN_STORE) || null;
   let selectedAsset = localStorage.getItem(ASSET_STORE) || "AUTO";
+  let selectedFunding = localStorage.getItem(FUNDING_STORE) || "wallet";
 
   function refreshByokStatus() {
     const k = getKey();
@@ -684,6 +697,37 @@
   loadModels();
   loadCredits();
   loadAssets();
+
+  // Funding source (own wallet vs a governed credit line)
+  function renderFundingSeg() {
+    $("funding-seg").querySelectorAll("button").forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset.funding === selectedFunding)));
+    $("funding-hint").textContent = selectedFunding === "credit"
+      ? "agent spends a governed credit line (a provider settles); policy still gates every payment"
+      : "agent pays from its own non-custodial wallet";
+  }
+  function renderCreditPanel(c) {
+    if (!c) return;
+    $("creditline").innerHTML =
+      `<div class="wallet-row"><span class="k">available</span><span class="v gold">${centsToUsd(c.availableUsdCents)}</span></div>` +
+      `<div class="wallet-row"><span class="k">used</span><span class="v">${centsToUsd(c.usedUsdCents)}</span></div>` +
+      `<div class="wallet-row"><span class="k">limit</span><span class="v">${centsToUsd(c.limitUsdCents)}</span></div>` +
+      `<div class="btn-row"><button class="btn" id="credit-reset">↺ Reset credit line</button></div>`;
+    $("credit-reset").addEventListener("click", async () => {
+      try { const r = await fetch("/api/funding/reset", { method: "POST" }).then((x) => x.json()); renderCreditPanel(r.credit); } catch (e) {}
+    });
+  }
+  async function loadFunding() {
+    try { const d = await fetch("/api/funding").then((r) => r.json()); renderCreditPanel(d.credit); } catch (e) {}
+    renderFundingSeg();
+  }
+  $("funding-seg").querySelectorAll("button").forEach((b) =>
+    b.addEventListener("click", () => {
+      selectedFunding = b.dataset.funding;
+      localStorage.setItem(FUNDING_STORE, selectedFunding);
+      renderFundingSeg();
+    }));
+  loadFunding();
   loadChains();
 
   // ---------- Run mode (Agent / Money: demo | live) ----------
@@ -1048,6 +1092,10 @@
         return bubble("policy_decision " + kind,
           `${emoji} <b>policy:</b> ${kind}${reason}`);
       }
+      case "funding":
+        return bubble("wallet_loaded", e.source === "credit"
+          ? `💳 funding: <b style="color:var(--gold)">credit line</b> · ${centsToUsd(e.availableUsdCents)} available of ${centsToUsd(e.limitUsdCents)}`
+          : `👛 funding: <b>own wallet</b> (non-custodial)`);
       case "wallet_loaded":
         return bubble("wallet_loaded", `👛 agent wallet: <code>${escapeHtml(e.address)}</code>`);
       case "fee":
@@ -1066,7 +1114,9 @@
           ? ` <span style="color:var(--faint)">(${escapeHtml(e.settleAmount)} ${escapeHtml(e.asset)})</span>` : "";
         const amt = usd + inAsset;
         const chainTag = e.chain ? ` <span style="color:var(--faint)">[${escapeHtml(e.chain)}]</span>` : "";
-        const tag = e.simulated ? ` <span style="color:var(--blue)">[demo]</span>` : "";
+        const tag = e.source === "credit"
+          ? ` <span style="color:var(--gold)">[credit]</span>`
+          : (e.simulated ? ` <span style="color:var(--blue)">[demo]</span>` : "");
         const explorerBtn = e.explorer && !e.simulated
           ? `<a class="btn blue explorer" target="_blank" rel="noopener" href="${escapeHtml(e.explorer)}">View on Explorer ↗</a>`
           : "";
@@ -1148,7 +1198,7 @@
       const resp = await fetch("/api/task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, model, chain, asset: selectedAsset, apiKey, minUsdCents, maxUsdCents, liveAgent, liveMoney }),
+        body: JSON.stringify({ query, model, chain, asset: selectedAsset, funding: selectedFunding, apiKey, minUsdCents, maxUsdCents, liveAgent, liveMoney }),
       });
       if (!resp.body) throw new Error("no response body");
       const reader = resp.body.getReader();
@@ -1185,6 +1235,7 @@
       setWorking(false);
       hideApproval();
       loadWallet(); // balance changed after the run's payments
+      loadFunding(); // credit-line "used" may have changed
     }
   }
   launchBtn.addEventListener("click", runTask);

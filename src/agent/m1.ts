@@ -2,6 +2,7 @@ import { getGateway, withMarkup } from "../ai/gateway.js";
 import { getAdapter, resolveChain, type ChainId } from "../chains/index.js";
 import { config } from "../config.js";
 import { getCredits } from "../credits/ledger.js";
+import { getCreditLine } from "../funding/credit.js";
 import { appendPayment } from "../log/payments.js";
 import {
   evaluate,
@@ -63,6 +64,8 @@ export interface RunM1Args {
   chain?: ChainId;
   /** Payment asset the agent settles in: XRP | USDC | USDT | RLUSD. Default XRP. */
   asset?: string;
+  /** Funding source: "wallet" (own, non-custodial) or "credit" (a credit line). */
+  funding?: "wallet" | "credit";
   /** AI gateway model id for the reasoning step (M3). */
   model?: string;
   /** BYOK key for the reasoning step; else the configured gateway key is used. */
@@ -104,27 +107,36 @@ export async function runM1(
   const adapter = getAdapter(chain);
   const liveMoney = args.liveMoney !== false; // default true (real on-chain)
   const liveAgent = args.liveAgent !== false; // default true (real AI reasoning)
+  const useCredit = args.funding === "credit"; // credit line vs own wallet
+  const userId = args.userId ?? "demo";
   // "Auto" → pick the settle asset from wallet holdings (live) or default XRP.
   let asset = (args.asset ?? "AUTO").toUpperCase();
-  if (asset === "AUTO") asset = liveMoney ? await adapter.pickAutoAsset() : "XRP";
+  if (asset === "AUTO") asset = useCredit ? "XRP" : liveMoney ? await adapter.pickAutoAsset() : "XRP";
   const url = `http://127.0.0.1:${args.merchantPort}/research?q=${encodeURIComponent(query)}&asset=${encodeURIComponent(asset)}`;
   const policy = buildPolicy(args.policy);
   let spend = freshSpendState();
 
-  // Settle a payment: a real on-chain tx in live-money mode, or a marked
-  // simulation in demo-money mode (policy gates still ran upstream either way).
+  // Settle a payment. Credit-funded → the provider covers on-chain settlement
+  // and Leash draws the USD value from the credit line (throws if over-limit).
+  // Own wallet → a real on-chain tx (live) or a marked simulation (demo).
   const settle = async (
     destination: string,
     amount: string,
     memo: string,
     payAsset: string,
-  ): Promise<{ hash: string; ledgerIndex: number; explorer: string; simulated: boolean }> => {
+    usdCents: number,
+  ): Promise<{ hash: string; ledgerIndex: number; explorer: string; simulated: boolean; source: "wallet" | "credit" }> => {
+    if (useCredit) {
+      getCreditLine().draw(userId, usdCents); // ceiling gate — throws if insufficient
+      const hash = `CREDIT-${Date.now().toString(16)}-${Math.floor(Math.random() * 1e6).toString(16)}`;
+      return { hash, ledgerIndex: 0, explorer: "", simulated: true, source: "credit" };
+    }
     if (liveMoney) {
       const r = await adapter.sendPayment({ destination, amount, memo, asset: payAsset });
-      return { hash: r.hash, ledgerIndex: r.ledgerIndex, explorer: r.explorer, simulated: false };
+      return { hash: r.hash, ledgerIndex: r.ledgerIndex, explorer: r.explorer, simulated: false, source: "wallet" };
     }
     const hash = `DEMO-${Date.now().toString(16)}-${Math.floor(Math.random() * 1e6).toString(16)}`;
-    return { hash, ledgerIndex: 0, explorer: "", simulated: true };
+    return { hash, ledgerIndex: 0, explorer: "", simulated: true, source: "wallet" };
   };
 
   // Re-read the kill switch and fold it into gate 1 before every evaluate/sign.
@@ -168,6 +180,19 @@ export async function runM1(
   };
 
   await emit({ type: "started", query });
+  // Announce the funding source the policy engine is governing.
+  if (useCredit) {
+    const cs = getCreditLine().state(userId);
+    await emit({
+      type: "funding",
+      source: "credit",
+      availableUsdCents: cs.availableUsdCents,
+      limitUsdCents: cs.limitUsdCents,
+      usedUsdCents: cs.usedUsdCents,
+    });
+  } else {
+    await emit({ type: "funding", source: "wallet" });
+  }
 
   // ----- 1. Probe the merchant to get the REAL payment requirement -----
   await emit({ type: "probing", url });
@@ -224,7 +249,9 @@ export async function runM1(
   }
 
   // ----- 3. Load (or auto-fund) the agent wallet on the chosen chain -----
-  if (liveMoney) {
+  if (useCredit) {
+    await emit({ type: "wallet_loaded", address: "(credit line — provider settles on-chain)" });
+  } else if (liveMoney) {
     const { address } = await adapter.loadAgentWallet();
     await emit({ type: "wallet_loaded", address });
   } else {
@@ -235,7 +262,7 @@ export async function runM1(
   await haltGuard();
   await emit({ type: "signing", amountUsdCents, destination: req402.payTo, kind: "merchant" });
   const settleAmount = req402.settleAmount ?? String(amountUsdCents);
-  const payment = await settle(req402.payTo, settleAmount, req402.memo, req402.asset);
+  const payment = await settle(req402.payTo, settleAmount, req402.memo, req402.asset, amountUsdCents);
   const explorer = payment.explorer;
   await emit({
     type: "settled",
@@ -248,6 +275,7 @@ export async function runM1(
     simulated: payment.simulated,
     asset: req402.asset,
     settleAmount,
+    source: payment.source,
   });
 
   // ----- 5. Unlock the data. Live: prove the tx on-ledger. Demo: skip proof. -----
@@ -318,7 +346,7 @@ export async function runM1(
     });
     // The platform fee is always settled in native XRP (USD value → drops).
     const feeDrops = usdCentsToDrops(feeRequest.amountUsdCents);
-    const feePayment = await settle(feeRequest.destination, feeDrops, `leash-fee:${req402.nonce}`, "XRP");
+    const feePayment = await settle(feeRequest.destination, feeDrops, `leash-fee:${req402.nonce}`, "XRP", feeRequest.amountUsdCents);
     const feeExplorer = feePayment.explorer;
     await emit({
       type: "settled",
@@ -331,6 +359,7 @@ export async function runM1(
       simulated: feePayment.simulated,
       asset: "XRP",
       settleAmount: feeDrops,
+      source: feePayment.source,
     });
     spend = recordSpend(spend, feeRequest);
     await appendPayment({

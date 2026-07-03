@@ -110,4 +110,11 @@ export const config = {
     usdCentsPerCredit: envInt("CREDIT_USD_CENTS", 1), // 1 credit = $0.01
     seedUsdCents: envInt("CREDITS_SEED_USD_CENTS", 500), // demo balance: $5.00
   },
+  // ----- Funding source ---------------------------------------------------
+  // The money the agent spends can come from its own wallet (non-custodial) OR
+  // a credit line (e.g. a provider like ClawCredit/t54 fronts it). Leash's
+  // policy engine governs the spend either way. This is the demo credit line.
+  funding: {
+    creditLimitUsdCents: envInt("CREDIT_LINE_USD_CENTS", 2500), // $25 demo credit line
+  },
 } as const;

@@ -18,6 +18,13 @@ export type AgentEvent =
     }
   | { type: "policy_decision"; decision: PolicyDecision }
   | { type: "wallet_loaded"; address: string }
+  | {
+      type: "funding";
+      source: "wallet" | "credit";
+      availableUsdCents?: number;
+      limitUsdCents?: number;
+      usedUsdCents?: number;
+    }
   | { type: "fee"; amountUsdCents: number; destination: string; bps: number }
   | {
       type: "signing";
@@ -36,6 +43,7 @@ export type AgentEvent =
       simulated?: boolean; // demo-money mode: no real on-chain tx
       asset?: string; // settlement asset: "XRP" | "USDC" | …
       settleAmount?: string; // amount actually paid in `asset`
+      source?: "wallet" | "credit"; // funding source that covered the payment
     }
   | {
       type: "approval_request";
@@ -86,6 +94,11 @@ export const consoleSink: EventSink = (e) => {
     }
     case "wallet_loaded":
       console.log(`[agent] wallet: ${e.address}`);
+      break;
+    case "funding":
+      console.log(
+        `[agent] funding: ${e.source}${e.source === "credit" ? ` (avail ${e.availableUsdCents}¢ / limit ${e.limitUsdCents}¢)` : ""}`,
+      );
       break;
     case "fee":
       console.log(

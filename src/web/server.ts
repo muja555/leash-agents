@@ -8,6 +8,7 @@ import { getAdapter, isChainId, listChains, resolveChain } from "../chains/index
 import { isAssetId, listAssets } from "../xrpl/assets.js";
 import { config } from "../config.js";
 import { centsToCredits, getCredits } from "../credits/ledger.js";
+import { getCreditLine } from "../funding/credit.js";
 import { buildMerchantApp } from "../server/merchant.js";
 import { createApproval, isHalted, resolveApproval, setHalted } from "./control.js";
 import { disconnect } from "../xrpl/client.js";
@@ -32,6 +33,7 @@ interface ApiTaskBody {
   maxUsdCents?: number; // per-payment cap (perTxCapUsdCents)
   chain?: string; // settlement chain id (xrpl | solana | base | …)
   asset?: string; // payment asset (XRP | USDC | USDT | RLUSD)
+  funding?: string; // "wallet" (own) or "credit" (a credit line)
   model?: string; // AI gateway model id (used by the M3 reasoning step)
   liveAgent?: boolean; // true = real AI reasoning; false = deterministic demo
   liveMoney?: boolean; // true = real on-chain payment; false = simulated demo
@@ -73,6 +75,7 @@ export async function startWeb(): Promise<void> {
     const model = body.model || undefined; // app never substitutes a model
     const chain = resolveChain(body.chain);
     const asset = isAssetId(String(body.asset)) ? String(body.asset) : "XRP";
+    const funding = body.funding === "credit" ? "credit" : "wallet";
     void provider; // legacy field — provider is now derived from the model id
 
     // Min/max (USD cents) from the Policy card flow into the REAL engine.
@@ -111,6 +114,7 @@ export async function startWeb(): Promise<void> {
         query,
         chain,
         asset,
+        funding,
         model,
         aiKey: apiKey,
         userId: DEMO_USER,
@@ -169,6 +173,15 @@ export async function startWeb(): Promise<void> {
   // GET /api/assets — payment assets the agent can settle in (XRP + stablecoins)
   app.get("/api/assets", (_req, res) => {
     res.json({ assets: listAssets(), default: "AUTO" });
+  });
+
+  // GET /api/funding — funding sources the policy engine governs (+ credit state)
+  app.get("/api/funding", (_req, res) => {
+    res.json({ sources: ["wallet", "credit"], default: "wallet", credit: getCreditLine().state(DEMO_USER) });
+  });
+  // POST /api/funding/reset — reset the demo credit line's drawn amount
+  app.post("/api/funding/reset", (_req, res) => {
+    res.json({ credit: getCreditLine().reset(DEMO_USER) });
   });
 
   // GET /api/models — the AI model catalog ("AI tokens" users can pick)
