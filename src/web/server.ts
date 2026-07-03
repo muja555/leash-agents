@@ -168,7 +168,7 @@ export async function startWeb(): Promise<void> {
 
   // GET /api/assets — payment assets the agent can settle in (XRP + stablecoins)
   app.get("/api/assets", (_req, res) => {
-    res.json({ assets: listAssets(), default: "XRP" });
+    res.json({ assets: listAssets(), default: "AUTO" });
   });
 
   // GET /api/models — the AI model catalog ("AI tokens" users can pick)

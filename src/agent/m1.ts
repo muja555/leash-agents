@@ -100,13 +100,15 @@ export async function runM1(
 ): Promise<{ hash: string; ledgerIndex: number; explorer: string }> {
   const emit = args.onEvent ?? noopSink;
   const query = args.query ?? config.agent.query;
-  const asset = (args.asset ?? "XRP").toUpperCase();
-  const url = `http://127.0.0.1:${args.merchantPort}/research?q=${encodeURIComponent(query)}&asset=${encodeURIComponent(asset)}`;
-  const policy = buildPolicy(args.policy);
   const chain = resolveChain(args.chain);
   const adapter = getAdapter(chain);
   const liveMoney = args.liveMoney !== false; // default true (real on-chain)
   const liveAgent = args.liveAgent !== false; // default true (real AI reasoning)
+  // "Auto" → pick the settle asset from wallet holdings (live) or default XRP.
+  let asset = (args.asset ?? "AUTO").toUpperCase();
+  if (asset === "AUTO") asset = liveMoney ? await adapter.pickAutoAsset() : "XRP";
+  const url = `http://127.0.0.1:${args.merchantPort}/research?q=${encodeURIComponent(query)}&asset=${encodeURIComponent(asset)}`;
+  const policy = buildPolicy(args.policy);
   let spend = freshSpendState();
 
   // Settle a payment: a real on-chain tx in live-money mode, or a marked

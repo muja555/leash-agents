@@ -480,6 +480,7 @@
         <div class="seg" id="chain-seg" role="group" aria-label="Settlement chain"></div>
         <label>Payment asset</label>
         <div class="seg" id="asset-seg" role="group" aria-label="Payment asset"></div>
+        <span class="mode-hint" id="asset-hint" style="margin-top:6px;display:block"></span>
         <label for="task-input">Query</label>
         <input id="task-input" type="text" placeholder="compare AI coding tools 2026" />
         <div class="btn-row">
@@ -561,7 +562,7 @@
 
   let selectedModel = localStorage.getItem(MODEL_STORE) || null;
   let selectedChain = localStorage.getItem(CHAIN_STORE) || null;
-  let selectedAsset = localStorage.getItem(ASSET_STORE) || "XRP";
+  let selectedAsset = localStorage.getItem(ASSET_STORE) || "AUTO";
 
   function refreshByokStatus() {
     const k = getKey();
@@ -665,6 +666,9 @@
         $("asset-seg").innerHTML = assets.map((a) =>
           `<button type="button" data-asset="${a.id}" aria-pressed="${a.id === selectedAsset}">` +
           `${a.label}${a.live ? "" : '<span class="soon">demo</span>'}</button>`).join("");
+        $("asset-hint").textContent = selectedAsset === "AUTO"
+          ? "the agent pays with the stablecoin your wallet holds, else XRP"
+          : `the agent always pays in ${selectedAsset}`;
         $("asset-seg").querySelectorAll("button").forEach((b) => {
           b.addEventListener("click", () => {
             selectedAsset = b.dataset.asset;

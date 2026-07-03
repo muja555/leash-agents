@@ -42,4 +42,6 @@ export interface PaymentAdapter {
   getBalance(): Promise<{ address: string; balance: string }>;
   /** Top up the agent wallet from the chain's testnet faucet. */
   fundFromFaucet(): Promise<{ address: string; balance: string }>;
+  /** "Auto" mode: pick the asset id to pay in based on the wallet's holdings. */
+  pickAutoAsset(): Promise<string>;
 }

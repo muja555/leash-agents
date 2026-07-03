@@ -45,6 +45,10 @@ export class StubAdapter implements PaymentAdapter {
     throw this.notImplemented();
   }
 
+  async pickAutoAsset(): Promise<string> {
+    return "XRP";
+  }
+
   private notImplemented(): Error {
     return new Error(
       `chain "${this.id}" is scaffolded but not implemented — add src/chains/${this.id}.ts ` +

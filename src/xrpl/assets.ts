@@ -27,16 +27,20 @@ export function currencyHex(code: string): string {
   return Buffer.from(code, "ascii").toString("hex").toUpperCase().padEnd(40, "0");
 }
 
-export function isAssetId(id: string): id is AssetId {
-  return id === "XRP" || id in TOKENS;
+export function isAssetId(id: string): boolean {
+  const up = (id ?? "").toUpperCase();
+  return up === "XRP" || up === "AUTO" || up in TOKENS;
 }
 
 export function resolveAsset(id: string | undefined): AssetSpec {
   const up = (id ?? "XRP").toUpperCase();
-  if (up === "XRP" || !(up in TOKENS)) return { id: "XRP", native: true };
+  if (up === "XRP" || up === "AUTO" || !(up in TOKENS)) return { id: "XRP", native: true };
   const key = up as Exclude<AssetId, "XRP">;
   return { id: key, native: false, currency: currencyHex(key), issuer: TOKENS[key] };
 }
+
+/** Token ids in preference order, for the "Auto (by wallet)" picker. */
+export const STABLECOINS: Exclude<AssetId, "XRP">[] = ["USDC", "USDT", "RLUSD"];
 
 /** True if the token has an issuer configured (→ live settlement possible). */
 export function assetIsLive(id: AssetId): boolean {
@@ -44,10 +48,13 @@ export function assetIsLive(id: AssetId): boolean {
   return Boolean(TOKENS[id as Exclude<AssetId, "XRP">]);
 }
 
-export function listAssets(): { id: AssetId; label: string; live: boolean }[] {
-  return (["XRP", "USDC", "USDT", "RLUSD"] as AssetId[]).map((id) => ({
-    id,
-    label: id,
-    live: assetIsLive(id),
-  }));
+export function listAssets(): { id: string; label: string; live: boolean }[] {
+  return [
+    { id: "AUTO", label: "Auto", live: true },
+    ...(["XRP", "USDC", "USDT", "RLUSD"] as AssetId[]).map((id) => ({
+      id,
+      label: id,
+      live: assetIsLive(id),
+    })),
+  ];
 }
