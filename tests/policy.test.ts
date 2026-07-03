@@ -13,22 +13,22 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 function P(over: Partial<Policy> = {}): Policy {
   return {
-    totalBudgetDrops: 50_000_000,
-    perTxCapDrops: 200_000,
-    dailyCapDrops: 5_000_000,
-    approvalThresholdDrops: 100_000,
+    totalBudgetUsdCents: 50_000_000,
+    perTxCapUsdCents: 200_000,
+    dailyCapUsdCents: 5_000_000,
+    approvalThresholdUsdCents: 100_000,
     allowlist: new Set([SERVICE]),
     denylist: new Set<string>(),
     halted: false,
     ...over,
   };
 }
-function req(amountDrops: number, service = SERVICE): PaymentRequest {
-  return { service, amountDrops, destination: "rDest", reason: "r" };
+function req(amountUsdCents: number, service = SERVICE): PaymentRequest {
+  return { service, amountUsdCents, destination: "rDest", reason: "r" };
 }
 const spent = (total: number, today: number): SpendState => ({
-  totalSpentDrops: total,
-  spentTodayDrops: today,
+  totalSpentUsdCents: total,
+  spentTodayUsdCents: today,
   dayStartMs: Date.now(),
 });
 
@@ -68,7 +68,7 @@ test("gate 3: amount over the per-tx cap is denied", () => {
   assert.equal(d.gate, "per_tx_cap");
 });
 test("gate 3: amount exactly at the per-tx cap is allowed (uses >)", () => {
-  const d = evaluate(P({ approvalThresholdDrops: 200_000 }), freshSpendState(), req(200_000));
+  const d = evaluate(P({ approvalThresholdUsdCents: 200_000 }), freshSpendState(), req(200_000));
   assert.equal(d.kind, "allow");
 });
 
@@ -79,13 +79,13 @@ test("gate 4: today's spend + amount over the daily cap is denied", () => {
   assert.equal(d.gate, "daily_cap");
 });
 test("gate 4: exactly at the daily cap is allowed", () => {
-  const d = evaluate(P({ approvalThresholdDrops: 5_000_000 }), spent(0, 4_800_000), req(200_000));
+  const d = evaluate(P({ approvalThresholdUsdCents: 5_000_000 }), spent(0, 4_800_000), req(200_000));
   assert.equal(d.kind, "allow");
 });
 
 // ---------- gate 5: total budget ----------
 test("gate 5: total spent + amount over the budget is denied", () => {
-  const d = evaluate(P({ dailyCapDrops: 1e12 }), spent(49_900_000, 0), req(200_000)); // 50.1M > 50M
+  const d = evaluate(P({ dailyCapUsdCents: 1e12 }), spent(49_900_000, 0), req(200_000)); // 50.1M > 50M
   assert.equal(d.kind, "deny");
   assert.equal(d.gate, "total_budget");
 });
@@ -117,20 +117,20 @@ test("ordering: per-tx cap beats the daily cap", () => {
 // ---------- spend tracking ----------
 test("recordSpend increments both total and today", () => {
   const s = recordSpend(freshSpendState(), req(1000));
-  assert.equal(s.totalSpentDrops, 1000);
-  assert.equal(s.spentTodayDrops, 1000);
+  assert.equal(s.totalSpentUsdCents, 1000);
+  assert.equal(s.spentTodayUsdCents, 1000);
 });
 test("rollDayIfNeeded resets today's spend after 24h, keeps total", () => {
   const start = Date.now() - DAY_MS - 1;
-  const s: SpendState = { totalSpentDrops: 3_000_000, spentTodayDrops: 3_000_000, dayStartMs: start };
+  const s: SpendState = { totalSpentUsdCents: 3_000_000, spentTodayUsdCents: 3_000_000, dayStartMs: start };
   const rolled = rollDayIfNeeded(s, Date.now());
-  assert.equal(rolled.spentTodayDrops, 0);
-  assert.equal(rolled.totalSpentDrops, 3_000_000);
+  assert.equal(rolled.spentTodayUsdCents, 0);
+  assert.equal(rolled.totalSpentUsdCents, 3_000_000);
 });
 test("daily cap frees up across a day boundary but total budget persists", () => {
   const start = Date.now() - DAY_MS - 1;
-  const s: SpendState = { totalSpentDrops: 4_900_000, spentTodayDrops: 4_900_000, dayStartMs: start };
+  const s: SpendState = { totalSpentUsdCents: 4_900_000, spentTodayUsdCents: 4_900_000, dayStartMs: start };
   // today resets → daily gate passes; but total 4.9M + 200k = 5.1M is under 50M budget → allow
-  const d = evaluate(P({ approvalThresholdDrops: 1e9 }), s, req(200_000), Date.now());
+  const d = evaluate(P({ approvalThresholdUsdCents: 1e9 }), s, req(200_000), Date.now());
   assert.equal(d.kind, "allow");
 });

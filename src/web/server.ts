@@ -28,8 +28,8 @@ interface ApiTaskBody {
   provider?: string;
   apiKey?: string;
   anthropicKey?: string; // legacy single-key field (pre multi-provider)
-  minDrops?: number; // auto-approve threshold (approvalThresholdDrops)
-  maxDrops?: number; // per-payment cap (perTxCapDrops)
+  minUsdCents?: number; // auto-approve threshold (approvalThresholdUsdCents)
+  maxUsdCents?: number; // per-payment cap (perTxCapUsdCents)
   chain?: string; // settlement chain id (xrpl | solana | base | …)
   asset?: string; // payment asset (XRP | USDC | USDT | RLUSD)
   model?: string; // AI gateway model id (used by the M3 reasoning step)
@@ -37,10 +37,10 @@ interface ApiTaskBody {
   liveMoney?: boolean; // true = real on-chain payment; false = simulated demo
 }
 
-/** Coerce a body value to a positive integer number of drops, else undefined. */
-function dropsOrUndefined(v: unknown): number | undefined {
+/** Coerce a body value to a positive integer USD-cents amount, else undefined. */
+function centsOrUndefined(v: unknown): number | undefined {
   const n = Number(v);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : undefined;
 }
 
 export async function startWeb(): Promise<void> {
@@ -75,9 +75,9 @@ export async function startWeb(): Promise<void> {
     const asset = isAssetId(String(body.asset)) ? String(body.asset) : "XRP";
     void provider; // legacy field — provider is now derived from the model id
 
-    // Min/max from the Policy card flow into the REAL engine for this run.
-    const approvalThresholdDrops = dropsOrUndefined(body.minDrops);
-    const perTxCapDrops = dropsOrUndefined(body.maxDrops);
+    // Min/max (USD cents) from the Policy card flow into the REAL engine.
+    const approvalThresholdUsdCents = centsOrUndefined(body.minUsdCents);
+    const perTxCapUsdCents = centsOrUndefined(body.maxUsdCents);
 
     // Setup SSE stream — disable Nagle so each event flushes to the socket immediately
     res.writeHead(200, {
@@ -116,7 +116,7 @@ export async function startWeb(): Promise<void> {
         userId: DEMO_USER,
         liveAgent: body.liveAgent !== false, // default live
         liveMoney: body.liveMoney !== false, // default live
-        policy: { approvalThresholdDrops, perTxCapDrops },
+        policy: { approvalThresholdUsdCents, perTxCapUsdCents },
         isHalted, // server-side kill switch — refused mid-run
         requestApproval: async (info) => {
           // Gate 6: emit the request to the UI, then await the user's decision.
@@ -124,7 +124,7 @@ export async function startWeb(): Promise<void> {
           write("agent", {
             type: "approval_request",
             approvalId: id,
-            amountDrops: info.amountDrops,
+            amountUsdCents: info.amountUsdCents,
             destination: info.destination,
             reason: info.reason,
             kind: info.kind,
@@ -148,10 +148,12 @@ export async function startWeb(): Promise<void> {
   // GET /api/policy — read-only policy view for the UI
   app.get("/api/policy", (_req, res) => {
     res.json({
-      totalBudgetDrops: config.policy.totalBudgetDrops,
-      perTxCapDrops: config.policy.perTxCapDrops,
-      dailyCapDrops: config.policy.dailyCapDrops,
-      approvalThresholdDrops: config.policy.approvalThresholdDrops,
+      // USD cents — the unit of account (settlement asset derived per payment).
+      totalBudgetUsdCents: config.policy.totalBudgetUsdCents,
+      perTxCapUsdCents: config.policy.perTxCapUsdCents,
+      dailyCapUsdCents: config.policy.dailyCapUsdCents,
+      approvalThresholdUsdCents: config.policy.approvalThresholdUsdCents,
+      xrpUsd: config.pricing.xrpUsd, // for showing an XRP-balance's USD value
       merchantPayTo: payTo,
       network: config.xrpl.network,
       feeBps: config.fee.wallet ? config.fee.bps : 0,

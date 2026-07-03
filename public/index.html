@@ -738,7 +738,7 @@
       const w = await fetch("/api/wallet?chain=" + encodeURIComponent(selectedChain || "xrpl")).then((r) => r.json());
       if (w.error) { $("wallet").innerHTML = `<div class="wallet-row"><span class="k">status</span><span class="v">${escapeHtml(w.error)}</span></div>`; return; }
       $("wallet").innerHTML =
-        `<div class="wallet-row"><span class="k">balance</span><span class="v gold">${escapeHtml(w.balance)} XRP</span></div>` +
+        `<div class="wallet-row"><span class="k">balance</span><span class="v gold">${escapeHtml(w.balance)} XRP${xrpUsd ? ` <span style="color:var(--faint);font-size:11px">≈ ${centsToUsd(Number(w.balance) * xrpUsd * 100)}</span>` : ""}</span></div>` +
         `<div class="wallet-row"><span class="k">address</span><span class="v addr">${escapeHtml(w.address)}</span></div>` +
         `<div class="btn-row"><button class="btn gold full" id="faucet-btn">⛲ Fund from testnet faucet</button></div>`;
       $("faucet-btn").addEventListener("click", async () => {
@@ -755,35 +755,39 @@
 
   // ---------- Policy (fetched once) ----------
   function dropsToXrp(d) { return (Number(d) / 1_000_000).toFixed(6); }
-  let policyTotalDrops = null;      // captured for the result "budget left" figure
+  function centsToUsd(c) { return "$" + (Number(c) / 100).toFixed(2); }
+  let policyTotalUsdCents = null;   // captured for the result "budget left" figure
+  let xrpUsd = null;                // XRP→USD rate (for showing balance in $)
   let runData = null;               // accumulates this run's deliverable + cost
   const resultCard = $("result-card");
   const resultBody = $("result-body");
   async function loadPolicy() {
     try {
       const p = await fetch("/api/policy").then((r) => r.json());
-      const total = Number(p.totalBudgetDrops) || 1;
-      policyTotalDrops = Number(p.totalBudgetDrops);
-      const pct = (d) => Math.min(100, (Number(d) / total) * 100).toFixed(1);
+      const total = Number(p.totalBudgetUsdCents) || 1;
+      policyTotalUsdCents = Number(p.totalBudgetUsdCents);
+      xrpUsd = Number(p.xrpUsd) || null;
+      const pct = (c) => Math.min(100, (Number(c) / total) * 100).toFixed(1);
+      const dollars = (c) => (Number(c) / 100).toFixed(2);
       $("policy").innerHTML = `
         <div class="policy-inputs">
           <div class="field min">
             <label for="policy-min">Min · auto-pay ≤</label>
             <div class="input-xrp">
-              <input id="policy-min" type="number" min="0" step="0.001" value="${dropsToXrp(p.approvalThresholdDrops)}" />
-              <span class="unit">XRP</span>
+              <input id="policy-min" type="number" min="0" step="0.01" value="${dollars(p.approvalThresholdUsdCents)}" />
+              <span class="unit">USD</span>
             </div>
           </div>
           <div class="field max">
             <label for="policy-max">Max · block &gt;</label>
             <div class="input-xrp">
-              <input id="policy-max" type="number" min="0" step="0.001" value="${dropsToXrp(p.perTxCapDrops)}" />
-              <span class="unit">XRP</span>
+              <input id="policy-max" type="number" min="0" step="0.01" value="${dollars(p.perTxCapUsdCents)}" />
+              <span class="unit">USD</span>
             </div>
           </div>
         </div>
         <div class="band" id="band">
-          <div class="band-head"><span>AUTONOMY BAND</span><span>per payment</span></div>
+          <div class="band-head"><span>AUTONOMY BAND</span><span>per payment (USD)</span></div>
           <div class="track">
             <span class="seg-auto" id="seg-auto"></span>
             <span class="seg-ask" id="seg-ask"></span>
@@ -798,20 +802,21 @@
         </div>
         <div class="budget-cap">
           <div class="label"><span>TOTAL BUDGET · lifetime</span><span>${p.network}</span></div>
-          <div class="amt">${dropsToXrp(p.totalBudgetDrops)} XRP</div>
+          <div class="amt">${centsToUsd(p.totalBudgetUsdCents)}</div>
           <div class="meter">
             <span style="width:100%;opacity:.18"></span>
-            <span style="width:${pct(p.dailyCapDrops)}%;opacity:.7"></span>
+            <span style="width:${pct(p.dailyCapUsdCents)}%;opacity:.7"></span>
           </div>
           <div class="meter-legend">
-            <span><i style="background:rgba(232,178,58,.7)"></i>daily cap ${dropsToXrp(p.dailyCapDrops)} XRP</span>
+            <span><i style="background:rgba(232,178,58,.7)"></i>daily cap ${centsToUsd(p.dailyCapUsdCents)}</span>
           </div>
         </div>
         <div class="kv"><span class="k">Merchant</span><span class="v mono">${p.merchantPayTo.slice(0,8)}…${p.merchantPayTo.slice(-6)}</span></div>
         <div class="kv"><span class="k">Leash fee</span><span class="v gold">${p.feeBps ? (p.feeBps / 100) + "% per payment" : "off"}</span></div>
+        <div class="kv"><span class="k">Settles in</span><span class="v">${escapeHtml(selectedAsset || "XRP")} · via wallet</span></div>
       `;
-      // Live autonomy-band visualization, driven by the min/max inputs.
-      const fmt = (x) => String(Math.round(x * 1e6) / 1e6);
+      // Live autonomy-band visualization, driven by the min/max inputs ($).
+      const fmt = (x) => "$" + (Math.round(x * 100) / 100).toFixed(2);
       function renderBand() {
         const minV = Math.max(0, parseFloat($("policy-min").value) || 0);
         const maxV = Math.max(0, parseFloat($("policy-max").value) || 0);
@@ -903,8 +908,8 @@
   function captureForResult(e) {
     if (!runData) return;
     if (e.type === "started") runData.query = e.query;
-    else if (e.type === "challenge") runData.merchantDrops = Number(e.amountDrops);
-    else if (e.type === "fee") { runData.feeDrops = Number(e.amountDrops); runData.feeBps = e.bps; }
+    else if (e.type === "challenge") runData.merchantCents = Number(e.amountUsdCents);
+    else if (e.type === "fee") { runData.feeCents = Number(e.amountUsdCents); runData.feeBps = e.bps; }
     else if (e.type === "synthesis") { runData.summary = e.text; runData.summaryModel = e.model; }
     else if (e.type === "unlocked") { runData.results = e.results || []; runData.query = e.query; }
     else if (e.type === "settled") {
@@ -925,14 +930,14 @@
   function showResult() {
     const r = runData || {};
     if (!r.hash && !(r.results && r.results.length)) return;
-    const merchant = r.merchantDrops || 0;
-    const fee = r.feeDrops || 0;
+    const merchant = r.merchantCents || 0;
+    const fee = r.feeCents || 0;
     const total = merchant + fee;
-    const remaining = policyTotalDrops != null ? dropsToXrp(policyTotalDrops - total) : "—";
+    const remaining = policyTotalUsdCents != null ? centsToUsd(policyTotalUsdCents - total) : "—";
     const items = (r.results || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("")
       || `<li style="color:var(--faint)">(no items returned)</li>`;
     const feeTile = fee > 0
-      ? `<div class="cost-tile"><div class="ct-k">Leash fee ${r.feeBps != null ? r.feeBps / 100 + "%" : ""}</div><div class="ct-v gold">${dropsToXrp(fee)} XRP</div></div>` : "";
+      ? `<div class="cost-tile"><div class="ct-k">Leash fee ${r.feeBps != null ? r.feeBps / 100 + "%" : ""}</div><div class="ct-v gold">${centsToUsd(fee)}</div></div>` : "";
     const merchantBtn = r.explorer
       ? `<a class="btn blue" target="_blank" rel="noopener" href="${escapeHtml(r.explorer)}">Merchant tx ↗</a>` : "";
     const feeBtn = r.feeExplorer
@@ -949,10 +954,10 @@
         <ol>${items}</ol>
       </div>
       <div class="cost-grid">
-        <div class="cost-tile"><div class="ct-k">Merchant</div><div class="ct-v">${dropsToXrp(merchant)} XRP</div></div>
+        <div class="cost-tile"><div class="ct-k">Merchant</div><div class="ct-v">${centsToUsd(merchant)}</div></div>
         ${feeTile}
-        <div class="cost-tile"><div class="ct-k">Total spent</div><div class="ct-v gold">${dropsToXrp(total)} XRP</div></div>
-        <div class="cost-tile"><div class="ct-k">Budget left</div><div class="ct-v green">${remaining} XRP</div></div>
+        <div class="cost-tile"><div class="ct-k">Total spent</div><div class="ct-v gold">${centsToUsd(total)}</div></div>
+        <div class="cost-tile"><div class="ct-k">Budget left</div><div class="ct-v green">${remaining}</div></div>
       </div>
       <div class="result-actions">
         ${merchantBtn}
@@ -968,15 +973,15 @@
 
   function exportReport() {
     const r = runData || {};
-    const merchant = r.merchantDrops || 0;
-    const fee = r.feeDrops || 0;
+    const merchant = r.merchantCents || 0;
+    const fee = r.feeCents || 0;
     const lines = [
       "# Leash — agent report", "",
       `Query: ${r.query || ""}`,
-      `Merchant: ${dropsToXrp(merchant)} XRP`,
+      `Merchant: ${centsToUsd(merchant)}`,
     ];
-    if (fee > 0) lines.push(`Leash fee${r.feeBps != null ? ` (${r.feeBps / 100}%)` : ""}: ${dropsToXrp(fee)} XRP`);
-    lines.push(`Total spent: ${dropsToXrp(merchant + fee)} XRP`);
+    if (fee > 0) lines.push(`Leash fee${r.feeBps != null ? ` (${r.feeBps / 100}%)` : ""}: ${centsToUsd(fee)}`);
+    lines.push(`Total spent: ${centsToUsd(merchant + fee)}`);
     if (r.hash) lines.push(`Merchant tx: ${r.hash}`);
     if (r.explorer) lines.push(`Merchant explorer: ${r.explorer}`);
     if (r.feeHash) lines.push(`Fee tx: ${r.feeHash}`);
@@ -999,7 +1004,7 @@
   let pendingApprovalId = null;
   function showApproval(e) {
     pendingApprovalId = e.approvalId;
-    $("approval-amount").textContent = dropsToXrp(e.amountDrops) + " XRP";
+    $("approval-amount").textContent = centsToUsd(e.amountUsdCents);
     $("approval-dest").textContent = e.destination;
     $("approval-kind").textContent = e.kind === "fee" ? "Leash platform fee" : "merchant payment";
     $("approval-reason").textContent = e.reason || "This payment falls in the approval band you set.";
@@ -1029,8 +1034,7 @@
         return bubble("probing", `→ probing the merchant for a paid resource…`);
       case "challenge":
         return bubble("challenge",
-          `💰 <b>402 challenge</b><br>
-          • ${e.amountDrops} drops (${dropsToXrp(e.amountDrops)} XRP)<br>
+          `💰 <b>402 challenge</b> · ${centsToUsd(e.amountUsdCents)} in ${escapeHtml(e.asset || "XRP")}<br>
           • → <code>${escapeHtml(e.destination)}</code><br>
           • memo: <code>${escapeHtml(e.memo)}</code>`);
       case "policy_decision": {
@@ -1044,8 +1048,7 @@
         return bubble("wallet_loaded", `👛 agent wallet: <code>${escapeHtml(e.address)}</code>`);
       case "fee":
         return bubble("challenge",
-          `🏷️ <b>Leash fee ${e.bps / 100}%</b><br>
-          • ${e.amountDrops} drops (${dropsToXrp(e.amountDrops)} XRP)<br>
+          `🏷️ <b>Leash fee ${e.bps / 100}%</b> · ${centsToUsd(e.amountUsdCents)}<br>
           • → <code>${escapeHtml(e.destination)}</code>`);
       case "signing":
         return bubble("signing",
@@ -1053,10 +1056,11 @@
       case "settled": {
         const base = e.kind === "fee" ? "FEE" : "TX";
         const label = e.simulated ? `${base} SIMULATED` : `${base} SETTLED`;
-        // Asset-aware amount: token settle amount for stablecoins, else XRP.
-        const amt = (e.asset && e.asset !== "XRP" && e.settleAmount != null)
-          ? ` · ${escapeHtml(e.settleAmount)} ${escapeHtml(e.asset)}`
-          : (e.amountDrops != null ? ` · ${dropsToXrp(e.amountDrops)} XRP` : "");
+        // USD value + the on-chain asset amount for stablecoins.
+        const usd = e.amountUsdCents != null ? ` · ${centsToUsd(e.amountUsdCents)}` : "";
+        const inAsset = (e.asset && e.asset !== "XRP" && e.settleAmount != null)
+          ? ` <span style="color:var(--faint)">(${escapeHtml(e.settleAmount)} ${escapeHtml(e.asset)})</span>` : "";
+        const amt = usd + inAsset;
         const chainTag = e.chain ? ` <span style="color:var(--faint)">[${escapeHtml(e.chain)}]</span>` : "";
         const tag = e.simulated ? ` <span style="color:var(--blue)">[demo]</span>` : "";
         const explorerBtn = e.explorer && !e.simulated
@@ -1071,7 +1075,7 @@
       case "approval_request":
         showApproval(e);
         return bubble("approval_request",
-          `🟡 <b>Approval needed</b> — ${dropsToXrp(e.amountDrops)} XRP to <code>${escapeHtml(e.destination)}</code>`);
+          `🟡 <b>Approval needed</b> — ${centsToUsd(e.amountUsdCents)} to <code>${escapeHtml(e.destination)}</code>`);
       case "approval_resolved":
         return bubble("approval_resolved " + e.decision,
           `${e.decision === "approve" ? "✓" : "✕"} <b>You ${e.decision === "approve" ? "approved" : "denied"}</b> the ${escapeHtml(e.kind)} payment.`);
@@ -1123,13 +1127,13 @@
       return;
     }
 
-    // Min/max from the Policy card → drops. Sent to the real policy engine.
-    const xrpToDrops = (el) => {
+    // Min/max from the Policy card ($ → USD cents). Sent to the real engine.
+    const usdToCents = (el) => {
       const v = el ? parseFloat(el.value) : NaN;
-      return Number.isFinite(v) && v > 0 ? Math.round(v * 1_000_000) : undefined;
+      return Number.isFinite(v) && v > 0 ? Math.round(v * 100) : undefined;
     };
-    const minDrops = xrpToDrops($("policy-min"));
-    const maxDrops = xrpToDrops($("policy-max"));
+    const minUsdCents = usdToCents($("policy-min"));
+    const maxUsdCents = usdToCents($("policy-max"));
 
     runData = {};
     resultCard.hidden = true;
@@ -1140,7 +1144,7 @@
       const resp = await fetch("/api/task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, model, chain, asset: selectedAsset, apiKey, minDrops, maxDrops, liveAgent, liveMoney }),
+        body: JSON.stringify({ query, model, chain, asset: selectedAsset, apiKey, minUsdCents, maxUsdCents, liveAgent, liveMoney }),
       });
       if (!resp.body) throw new Error("no response body");
       const reader = resp.body.getReader();

@@ -11,17 +11,17 @@ export type AgentEvent =
   | { type: "probing"; url: string }
   | {
       type: "challenge";
-      amountDrops: number;
+      amountUsdCents: number;
       asset: string;
       destination: string;
       memo: string;
     }
   | { type: "policy_decision"; decision: PolicyDecision }
   | { type: "wallet_loaded"; address: string }
-  | { type: "fee"; amountDrops: number; destination: string; bps: number }
+  | { type: "fee"; amountUsdCents: number; destination: string; bps: number }
   | {
       type: "signing";
-      amountDrops: number;
+      amountUsdCents: number;
       destination: string;
       kind?: "merchant" | "fee";
     }
@@ -31,7 +31,7 @@ export type AgentEvent =
       ledgerIndex: number;
       explorer: string;
       kind?: "merchant" | "fee";
-      amountDrops?: number;
+      amountUsdCents?: number;
       chain?: string;
       simulated?: boolean; // demo-money mode: no real on-chain tx
       asset?: string; // settlement asset: "XRP" | "USDC" | …
@@ -40,7 +40,7 @@ export type AgentEvent =
   | {
       type: "approval_request";
       approvalId: string;
-      amountDrops: number;
+      amountUsdCents: number;
       destination: string;
       reason: string;
       kind: "merchant" | "fee";
@@ -76,7 +76,7 @@ export const consoleSink: EventSink = (e) => {
       break;
     case "challenge":
       console.log(
-        `[agent] 402 challenge: ${e.amountDrops} drops ${e.asset} → ${e.destination} (memo: ${e.memo})`,
+        `[agent] 402 challenge: ${e.amountUsdCents}¢ ${e.asset} → ${e.destination} (memo: ${e.memo})`,
       );
       break;
     case "policy_decision": {
@@ -89,11 +89,11 @@ export const consoleSink: EventSink = (e) => {
       break;
     case "fee":
       console.log(
-        `[agent] platform fee ${e.bps / 100}%: ${e.amountDrops} drops → ${e.destination}`,
+        `[agent] platform fee ${e.bps / 100}%: ${e.amountUsdCents}¢ → ${e.destination}`,
       );
       break;
     case "approval_request":
-      console.log(`[policy] awaiting human approval: ${e.amountDrops} drops → ${e.destination}`);
+      console.log(`[policy] awaiting human approval: ${e.amountUsdCents}¢ → ${e.destination}`);
       break;
     case "approval_resolved":
       console.log(`[policy] human ${e.decision === "approve" ? "approved" : "denied"} the ${e.kind} payment`);

@@ -9,6 +9,7 @@ import {
   recordSpend,
 } from "../policy/engine.js";
 import type { PaymentRequest, Policy, SpendState } from "../policy/types.js";
+import { usdCentsToDrops } from "../pricing.js";
 import { noopSink, type EventSink } from "./events.js";
 
 const SERVICE = "leash:research";
@@ -22,7 +23,7 @@ interface Required402 {
   currency?: string | null;
   issuer?: string | null;
   payTo: string;
-  amountDrops: string; // policy value (always XRP-drops)
+  amountUsdCents: string; // policy value (USD cents)
   settleAmount?: string; // what to pay in `asset` (drops for XRP, token units otherwise)
   nonce: string;
   memo: string;
@@ -33,21 +34,21 @@ interface Required402 {
  * Per-run policy overrides the caller may supply (e.g. the web UI's min/max
  * inputs). Anything omitted falls back to the config defaults. These flow into
  * the real policy engine — they are not cosmetic.
- *   min = approvalThresholdDrops (at/below → auto-pay)
- *   max = perTxCapDrops          (above   → deny)
+ *   min = approvalThresholdUsdCents (at/below → auto-pay)
+ *   max = perTxCapUsdCents          (above   → deny)
  */
 export interface PolicyOverrides {
-  approvalThresholdDrops?: number;
-  perTxCapDrops?: number;
+  approvalThresholdUsdCents?: number;
+  perTxCapUsdCents?: number;
 }
 
 function buildPolicy(overrides?: PolicyOverrides): Policy {
   return {
-    totalBudgetDrops: config.policy.totalBudgetDrops,
-    perTxCapDrops: overrides?.perTxCapDrops ?? config.policy.perTxCapDrops,
-    dailyCapDrops: config.policy.dailyCapDrops,
-    approvalThresholdDrops:
-      overrides?.approvalThresholdDrops ?? config.policy.approvalThresholdDrops,
+    totalBudgetUsdCents: config.policy.totalBudgetUsdCents,
+    perTxCapUsdCents: overrides?.perTxCapUsdCents ?? config.policy.perTxCapUsdCents,
+    dailyCapUsdCents: config.policy.dailyCapUsdCents,
+    approvalThresholdUsdCents:
+      overrides?.approvalThresholdUsdCents ?? config.policy.approvalThresholdUsdCents,
     allowlist: new Set([SERVICE, FEE_SERVICE]),
     denylist: new Set<string>(),
     halted: false,
@@ -80,7 +81,7 @@ export interface RunM1Args {
    * refuse. Omitted (terminal mode) → ask_human is treated as a hard stop.
    */
   requestApproval?: (info: {
-    amountDrops: number;
+    amountUsdCents: number;
     destination: string;
     reason: string;
     kind: "merchant" | "fee";
@@ -153,7 +154,7 @@ export async function runM1(
         throw new Error(`policy requires human approval (${decision.reason}) — no approver attached`);
       }
       const verdict = await args.requestApproval({
-        amountDrops: req.amountDrops,
+        amountUsdCents: req.amountUsdCents,
         destination: req.destination,
         reason: decision.reason,
         kind,
@@ -179,19 +180,19 @@ export async function runM1(
   if (req402.payTo !== args.merchantPayTo) {
     throw new Error(`merchant changed payTo mid-handshake: header=${args.merchantPayTo} body=${req402.payTo}`);
   }
-  const amountDrops = Number(req402.amountDrops);
-  if (!Number.isFinite(amountDrops) || amountDrops <= 0) {
-    throw new Error(`merchant 402 amount is not a positive number: ${req402.amountDrops}`);
+  const amountUsdCents = Number(req402.amountUsdCents);
+  if (!Number.isFinite(amountUsdCents) || amountUsdCents <= 0) {
+    throw new Error(`merchant 402 amount is not a positive number: ${req402.amountUsdCents}`);
   }
   const paymentRequest: PaymentRequest = {
     service: req402.service,
-    amountDrops,
+    amountUsdCents,
     destination: req402.payTo,
     reason: `agent needs paid resource for query: "${query}"`,
   };
   await emit({
     type: "challenge",
-    amountDrops,
+    amountUsdCents,
     asset: req402.asset,
     destination: req402.payTo,
     memo: req402.memo,
@@ -201,12 +202,12 @@ export async function runM1(
   // sent to the configured fee wallet. Skipped entirely if no fee wallet is set.
   const feeWallet = config.fee.wallet;
   const feeBps = config.fee.bps;
-  const feeDrops = feeWallet && feeBps > 0 ? Math.round((amountDrops * feeBps) / 10_000) : 0;
+  const feeUsdCents = feeWallet && feeBps > 0 ? Math.round((amountUsdCents * feeBps) / 10_000) : 0;
   const feeRequest: PaymentRequest | null =
-    feeWallet && feeDrops > 0
+    feeWallet && feeUsdCents > 0
       ? {
           service: FEE_SERVICE,
-          amountDrops: feeDrops,
+          amountUsdCents: feeUsdCents,
           destination: feeWallet,
           reason: `Leash platform fee (${feeBps / 100}%)`,
         }
@@ -230,8 +231,8 @@ export async function runM1(
 
   // ----- 4. Sign + submit the Payment with the memo binding it to the 402 -----
   await haltGuard();
-  await emit({ type: "signing", amountDrops, destination: req402.payTo, kind: "merchant" });
-  const settleAmount = req402.settleAmount ?? req402.amountDrops;
+  await emit({ type: "signing", amountUsdCents, destination: req402.payTo, kind: "merchant" });
+  const settleAmount = req402.settleAmount ?? String(amountUsdCents);
   const payment = await settle(req402.payTo, settleAmount, req402.memo, req402.asset);
   const explorer = payment.explorer;
   await emit({
@@ -240,7 +241,7 @@ export async function runM1(
     ledgerIndex: payment.ledgerIndex,
     explorer,
     kind: "merchant",
-    amountDrops,
+    amountUsdCents,
     chain,
     simulated: payment.simulated,
     asset: req402.asset,
@@ -292,7 +293,7 @@ export async function runM1(
   await appendPayment({
     ts: new Date().toISOString(),
     service: paymentRequest.service,
-    amountDrops: req402.amountDrops,
+    amountDrops: settleAmount, // on-chain settle amount (drops for XRP, token units otherwise)
     hash: payment.hash,
     ledgerIndex: payment.ledgerIndex,
     explorer,
@@ -302,24 +303,20 @@ export async function runM1(
   if (feeRequest) {
     await emit({
       type: "fee",
-      amountDrops: feeRequest.amountDrops,
+      amountUsdCents: feeRequest.amountUsdCents,
       destination: feeRequest.destination,
       bps: feeBps,
     });
     await haltGuard();
     await emit({
       type: "signing",
-      amountDrops: feeRequest.amountDrops,
+      amountUsdCents: feeRequest.amountUsdCents,
       destination: feeRequest.destination,
       kind: "fee",
     });
-    // The platform fee is always settled in native XRP.
-    const feePayment = await settle(
-      feeRequest.destination,
-      String(feeRequest.amountDrops),
-      `leash-fee:${req402.nonce}`,
-      "XRP",
-    );
+    // The platform fee is always settled in native XRP (USD value → drops).
+    const feeDrops = usdCentsToDrops(feeRequest.amountUsdCents);
+    const feePayment = await settle(feeRequest.destination, feeDrops, `leash-fee:${req402.nonce}`, "XRP");
     const feeExplorer = feePayment.explorer;
     await emit({
       type: "settled",
@@ -327,15 +324,17 @@ export async function runM1(
       ledgerIndex: feePayment.ledgerIndex,
       explorer: feeExplorer,
       kind: "fee",
-      amountDrops: feeRequest.amountDrops,
+      amountUsdCents: feeRequest.amountUsdCents,
       chain,
       simulated: feePayment.simulated,
+      asset: "XRP",
+      settleAmount: feeDrops,
     });
     spend = recordSpend(spend, feeRequest);
     await appendPayment({
       ts: new Date().toISOString(),
       service: feeRequest.service,
-      amountDrops: String(feeRequest.amountDrops),
+      amountDrops: feeDrops,
       hash: feePayment.hash,
       ledgerIndex: feePayment.ledgerIndex,
       explorer: feeExplorer,

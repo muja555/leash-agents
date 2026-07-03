@@ -3,6 +3,7 @@ import express, { type Express, type Request, type Response } from "express";
 import { convertHexToString } from "xrpl";
 import { config } from "../config.js";
 import { resolveAsset } from "../xrpl/assets.js";
+import { settleAmountFor } from "../pricing.js";
 import { getClient, loadOrFundWallet } from "../xrpl/client.js";
 
 const SERVICE = "leash:research";
@@ -26,7 +27,7 @@ const CANNED_RESEARCH: Record<string, string[]> = {
 
 interface PendingRequirement {
   service: string;
-  amountDrops: string; // policy value (always XRP-drops), regardless of settle asset
+  amountUsdCents: string; // policy value (USD cents), regardless of settle asset
   settleAmount: string; // what the agent actually pays: drops (XRP) or token units
   asset: string; // "XRP" | "USDC" | …
   currency?: string; // XRPL currency code (tokens)
@@ -94,10 +95,10 @@ function issue402(res: Response, payTo: string, assetId: string): void {
   const asset = resolveAsset(assetId);
   const nonce = newNonce();
   // Policy always gates on the XRP-drops value; settlement is in the chosen asset.
-  const settleAmount = asset.native ? config.x402.priceDrops : config.x402.tokenAmount;
+  const settleAmount = settleAmountFor(config.x402.priceUsdCents, asset.id);
   pending.set(nonce, {
     service: SERVICE,
-    amountDrops: config.x402.priceDrops,
+    amountUsdCents: String(config.x402.priceUsdCents),
     settleAmount,
     asset: asset.id,
     currency: asset.currency,
@@ -113,7 +114,7 @@ function issue402(res: Response, payTo: string, assetId: string): void {
     currency: asset.currency ?? null,
     issuer: asset.issuer ?? null,
     payTo,
-    amountDrops: config.x402.priceDrops, // policy value
+    amountUsdCents: config.x402.priceUsdCents, // policy value (USD cents)
     settleAmount, // what to actually pay in `asset`
     nonce,
     memo: nonce,
@@ -224,7 +225,7 @@ async function verifyAndUnlock(
     paymentProof: {
       hash: txHash,
       ledgerIndex: ledger,
-      amountDrops: requirement.amountDrops,
+      amountUsdCents: requirement.amountUsdCents,
       settleAmount: requirement.settleAmount,
       asset: requirement.asset,
     },
@@ -250,7 +251,7 @@ export async function buildMerchantApp(): Promise<{ app: Express; payTo: string 
         query,
         service: SERVICE,
         results: resultsFor(query),
-        paymentProof: { hash: "demo", ledgerIndex: 0, amountDrops: "0", simulated: true },
+        paymentProof: { hash: "demo", ledgerIndex: 0, amountUsdCents: "0", simulated: true },
         ts: new Date().toISOString(),
       });
       return;

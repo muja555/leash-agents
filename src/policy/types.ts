@@ -1,8 +1,10 @@
+// All amounts are in USD cents — the unit of account. On-chain settlement in
+// XRP/USDC/USDT/RLUSD is derived from these USD values (see src/pricing.ts).
 export interface Policy {
-  totalBudgetDrops: number;
-  perTxCapDrops: number;
-  dailyCapDrops: number;
-  approvalThresholdDrops: number;
+  totalBudgetUsdCents: number;
+  perTxCapUsdCents: number;
+  dailyCapUsdCents: number;
+  approvalThresholdUsdCents: number;
   allowlist: ReadonlySet<string>;
   denylist: ReadonlySet<string>;
   halted: boolean;
@@ -10,14 +12,14 @@ export interface Policy {
 
 export interface PaymentRequest {
   service: string;
-  amountDrops: number;
+  amountUsdCents: number;
   destination: string;
   reason: string;
 }
 
 export interface SpendState {
-  totalSpentDrops: number;
-  spentTodayDrops: number;
+  totalSpentUsdCents: number;
+  spentTodayUsdCents: number;
   dayStartMs: number;
 }
 

@@ -31,6 +31,14 @@ const envBool = (k: string, fallback: boolean): boolean => {
   return v === "true" || v === "1";
 };
 
+const envFloat = (k: string, fallback: number): number => {
+  const v = process.env[k];
+  if (!v) return fallback;
+  const n = Number(v);
+  if (!Number.isFinite(n)) throw new Error(`env ${k} is not a number: ${v}`);
+  return n;
+};
+
 export const config = {
   xrpl: {
     rpc: env("XRPL_RPC", "wss://s.altnet.rippletest.net:51233"),
@@ -47,12 +55,15 @@ export const config = {
     bps: envInt("LEASH_FEE_BPS", 1000), // 1000 bps = 10%
   },
   x402: {
-    // priceDrops is the per-call price the merchant demands. The key lives
-    // under `x402` because in M2 we restore the x402-xrpl middleware and
-    // this is the same value the facilitator will see.
-    priceDrops: env("XRPL_PRICE_DROPS", "1000"),
-    // Per-call price when settling in a stablecoin (decimal token units).
-    tokenAmount: env("XRPL_TOKEN_PRICE", "0.01"),
+    // Per-call price in USD cents. The policy engine gates on this USD value;
+    // the on-chain settle amount is derived per asset (XRP via the rate below,
+    // stablecoins 1:1). $0.01 = 1 cent.
+    priceUsdCents: envInt("PRICE_USD_CENTS", 1),
+  },
+  // USD is the unit of account. XRP amounts convert via this rate; stablecoins
+  // (USDC/USDT/RLUSD) are 1:1 with USD. Testnet demo value — set XRP_USD_RATE.
+  pricing: {
+    xrpUsd: envFloat("XRP_USD_RATE", 2.5),
   },
   // Issuers for XRPL stablecoins (issued-currency / IOU). Set to make live
   // settlement in that token possible (the agent wallet also needs a trust line
@@ -65,11 +76,13 @@ export const config = {
   merchant: {
     port: envInt("PORT", 8080),
   },
+  // Policy caps, all in USD cents (the unit of account). Defaults: $50 budget,
+  // $0.50 per-tx cap, $5 daily, $0.25 auto-pay threshold.
   policy: {
-    totalBudgetDrops: envInt("POLICY_TOTAL_BUDGET_DROPS", 50_000_000),
-    perTxCapDrops: envInt("POLICY_PER_TX_CAP_DROPS", 200_000),
-    dailyCapDrops: envInt("POLICY_DAILY_CAP_DROPS", 5_000_000),
-    approvalThresholdDrops: envInt("POLICY_APPROVAL_THRESHOLD_DROPS", 100_000),
+    totalBudgetUsdCents: envInt("POLICY_TOTAL_BUDGET_USD_CENTS", 5000),
+    perTxCapUsdCents: envInt("POLICY_PER_TX_CAP_USD_CENTS", 50),
+    dailyCapUsdCents: envInt("POLICY_DAILY_CAP_USD_CENTS", 500),
+    approvalThresholdUsdCents: envInt("POLICY_APPROVAL_THRESHOLD_USD_CENTS", 25),
   },
   agent: {
     query: env("AGENT_QUERY", "compare AI coding tools 2026"),
