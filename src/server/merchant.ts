@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import express, { type Express, type Request, type Response } from "express";
 import { convertHexToString } from "xrpl";
 import { config } from "../config.js";
+import { resolveAsset } from "../xrpl/assets.js";
 import { getClient, loadOrFundWallet } from "../xrpl/client.js";
 
 const SERVICE = "leash:research";
@@ -25,7 +26,11 @@ const CANNED_RESEARCH: Record<string, string[]> = {
 
 interface PendingRequirement {
   service: string;
-  amountDrops: string;
+  amountDrops: string; // policy value (always XRP-drops), regardless of settle asset
+  settleAmount: string; // what the agent actually pays: drops (XRP) or token units
+  asset: string; // "XRP" | "USDC" | …
+  currency?: string; // XRPL currency code (tokens)
+  issuer?: string; // token issuer (tokens)
   payTo: string;
   issuedAt: number;
 }
@@ -85,11 +90,18 @@ function txMemoString(tx: LedgerTxResult): string | null {
   }
 }
 
-function issue402(res: Response, payTo: string): void {
+function issue402(res: Response, payTo: string, assetId: string): void {
+  const asset = resolveAsset(assetId);
   const nonce = newNonce();
+  // Policy always gates on the XRP-drops value; settlement is in the chosen asset.
+  const settleAmount = asset.native ? config.x402.priceDrops : config.x402.tokenAmount;
   pending.set(nonce, {
     service: SERVICE,
     amountDrops: config.x402.priceDrops,
+    settleAmount,
+    asset: asset.id,
+    currency: asset.currency,
+    issuer: asset.issuer,
     payTo,
     issuedAt: Date.now(),
   });
@@ -97,13 +109,16 @@ function issue402(res: Response, payTo: string): void {
     error: "Payment Required",
     service: SERVICE,
     network: config.xrpl.network,
-    asset: "XRP",
+    asset: asset.id,
+    currency: asset.currency ?? null,
+    issuer: asset.issuer ?? null,
     payTo,
-    amountDrops: config.x402.priceDrops,
+    amountDrops: config.x402.priceDrops, // policy value
+    settleAmount, // what to actually pay in `asset`
     nonce,
     memo: nonce,
     instructions:
-      "Submit an XRPL Payment to `payTo` for `amountDrops` (or more) with `memo` embedded in the Memos field (UTF-8). Then retry the same URL with `?tx=<hash>`.",
+      `Submit an XRPL Payment to \`payTo\` for \`settleAmount\` of ${asset.native ? "XRP (drops)" : asset.id} with \`memo\` in the Memos field, then retry with \`?tx=<hash>\`.`,
   });
 }
 
@@ -158,22 +173,40 @@ async function verifyAndUnlock(
     res.status(402).json({ error: "tx has no Amount field" });
     return;
   }
-  if (typeof rawAmount === "object" && rawAmount !== null) {
-    res.status(402).json({ error: "cross-currency Amount detected; only native XRP supported in M1" });
-    return;
-  }
-  let paid: bigint;
-  let demanded: bigint;
-  try {
-    paid = BigInt(String(rawAmount));
-    demanded = BigInt(requirement.amountDrops);
-  } catch {
-    res.status(402).json({ error: `invalid drops integer: ${JSON.stringify(rawAmount)}` });
-    return;
-  }
-  if (paid < demanded) {
-    res.status(402).json({ error: `underpaid: ${paid} < ${demanded}` });
-    return;
+  if (requirement.asset === "XRP") {
+    // Native XRP: Amount is a drops string.
+    if (typeof rawAmount === "object" && rawAmount !== null) {
+      res.status(402).json({ error: "expected native XRP but tx paid an issued currency" });
+      return;
+    }
+    let paid: bigint;
+    let demanded: bigint;
+    try {
+      paid = BigInt(String(rawAmount));
+      demanded = BigInt(requirement.settleAmount);
+    } catch {
+      res.status(402).json({ error: `invalid drops integer: ${JSON.stringify(rawAmount)}` });
+      return;
+    }
+    if (paid < demanded) {
+      res.status(402).json({ error: `underpaid: ${paid} < ${demanded}` });
+      return;
+    }
+  } else {
+    // Issued currency (stablecoin): Amount is { currency, issuer, value }.
+    if (typeof rawAmount !== "object" || rawAmount === null) {
+      res.status(402).json({ error: `expected an issued ${requirement.asset} amount but tx paid native XRP` });
+      return;
+    }
+    const iou = rawAmount as { currency?: string; issuer?: string; value?: string };
+    if (iou.currency !== requirement.currency || iou.issuer !== requirement.issuer) {
+      res.status(402).json({ error: `wrong token/issuer: got ${iou.currency}/${iou.issuer}` });
+      return;
+    }
+    if (Number(iou.value ?? "0") < Number(requirement.settleAmount)) {
+      res.status(402).json({ error: `underpaid: ${iou.value} < ${requirement.settleAmount} ${requirement.asset}` });
+      return;
+    }
   }
 
   // ✓ all checks pass — one-shot consume the nonce
@@ -188,7 +221,13 @@ async function verifyAndUnlock(
     query,
     service: requirement.service,
     results,
-    paymentProof: { hash: txHash, ledgerIndex: ledger, amountDrops: String(rawAmount) },
+    paymentProof: {
+      hash: txHash,
+      ledgerIndex: ledger,
+      amountDrops: requirement.amountDrops,
+      settleAmount: requirement.settleAmount,
+      asset: requirement.asset,
+    },
     ts: new Date().toISOString(),
   });
 }
@@ -217,7 +256,8 @@ export async function buildMerchantApp(): Promise<{ app: Express; payTo: string 
       return;
     }
     if (!txHash) {
-      issue402(res, payTo);
+      const assetId = typeof req.query.asset === "string" ? req.query.asset : "XRP";
+      issue402(res, payTo, assetId);
       return;
     }
     await verifyAndUnlock(txHash, query, res);

@@ -21,6 +21,7 @@ export interface PaymentReceipt {
   ledgerIndex: number; // ledger/slot/block height; -1 if not applicable
   explorer: string;
   amount: string;
+  asset?: string; // "XRP" | "USDC" | … (settlement asset)
   destination: string;
 }
 

@@ -5,6 +5,7 @@ import type { AgentEvent } from "../agent/events.js";
 import { runM1 } from "../agent/m1.js";
 import { getGateway } from "../ai/gateway.js";
 import { getAdapter, isChainId, listChains, resolveChain } from "../chains/index.js";
+import { isAssetId, listAssets } from "../xrpl/assets.js";
 import { config } from "../config.js";
 import { centsToCredits, getCredits } from "../credits/ledger.js";
 import { buildMerchantApp } from "../server/merchant.js";
@@ -30,6 +31,7 @@ interface ApiTaskBody {
   minDrops?: number; // auto-approve threshold (approvalThresholdDrops)
   maxDrops?: number; // per-payment cap (perTxCapDrops)
   chain?: string; // settlement chain id (xrpl | solana | base | …)
+  asset?: string; // payment asset (XRP | USDC | USDT | RLUSD)
   model?: string; // AI gateway model id (used by the M3 reasoning step)
   liveAgent?: boolean; // true = real AI reasoning; false = deterministic demo
   liveMoney?: boolean; // true = real on-chain payment; false = simulated demo
@@ -70,6 +72,7 @@ export async function startWeb(): Promise<void> {
     const apiKey = body.apiKey ?? body.anthropicKey;
     const model = body.model || undefined; // app never substitutes a model
     const chain = resolveChain(body.chain);
+    const asset = isAssetId(String(body.asset)) ? String(body.asset) : "XRP";
     void provider; // legacy field — provider is now derived from the model id
 
     // Min/max from the Policy card flow into the REAL engine for this run.
@@ -107,6 +110,7 @@ export async function startWeb(): Promise<void> {
         merchantPayTo: payTo,
         query,
         chain,
+        asset,
         model,
         aiKey: apiKey,
         userId: DEMO_USER,
@@ -158,6 +162,11 @@ export async function startWeb(): Promise<void> {
   // GET /api/chains — settlement chains the control plane can route to
   app.get("/api/chains", (_req, res) => {
     res.json({ chains: listChains(), default: resolveChain() });
+  });
+
+  // GET /api/assets — payment assets the agent can settle in (XRP + stablecoins)
+  app.get("/api/assets", (_req, res) => {
+    res.json({ assets: listAssets(), default: "XRP" });
   });
 
   // GET /api/models — the AI model catalog ("AI tokens" users can pick)

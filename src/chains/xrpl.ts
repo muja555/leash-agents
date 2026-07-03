@@ -1,4 +1,5 @@
 import type { Wallet } from "xrpl";
+import { resolveAsset } from "../xrpl/assets.js";
 import { config } from "../config.js";
 import { getClient, loadOrFundWallet } from "../xrpl/client.js";
 import { txExplorerUrl } from "../xrpl/explorer.js";
@@ -25,10 +26,12 @@ export class XrplAdapter implements PaymentAdapter {
 
   async sendPayment(args: SendPaymentArgs): Promise<PaymentReceipt> {
     if (!this.wallet) throw new Error("xrpl: call loadAgentWallet() before sendPayment()");
+    const asset = resolveAsset(args.asset); // "XRP" (native) or a stablecoin IOU
     const r = await sendXrpPayment({
       wallet: this.wallet,
       destination: args.destination,
-      amountDrops: args.amount,
+      amount: args.amount,
+      asset,
       memo: args.memo,
     });
     return {
@@ -36,7 +39,8 @@ export class XrplAdapter implements PaymentAdapter {
       hash: r.hash,
       ledgerIndex: r.ledgerIndex,
       explorer: this.explorerUrl(r.hash),
-      amount: r.amountDrops,
+      amount: r.amount,
+      asset: r.asset,
       destination: r.destination,
     };
   }

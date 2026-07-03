@@ -34,6 +34,8 @@ export type AgentEvent =
       amountDrops?: number;
       chain?: string;
       simulated?: boolean; // demo-money mode: no real on-chain tx
+      asset?: string; // settlement asset: "XRP" | "USDC" | …
+      settleAmount?: string; // amount actually paid in `asset`
     }
   | {
       type: "approval_request";

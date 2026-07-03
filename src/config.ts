@@ -51,6 +51,16 @@ export const config = {
     // under `x402` because in M2 we restore the x402-xrpl middleware and
     // this is the same value the facilitator will see.
     priceDrops: env("XRPL_PRICE_DROPS", "1000"),
+    // Per-call price when settling in a stablecoin (decimal token units).
+    tokenAmount: env("XRPL_TOKEN_PRICE", "0.01"),
+  },
+  // Issuers for XRPL stablecoins (issued-currency / IOU). Set to make live
+  // settlement in that token possible (the agent wallet also needs a trust line
+  // + balance). Blank → the token is demo-only (simulated in Money=Demo).
+  assets: {
+    usdcIssuer: envOpt("XRPL_USDC_ISSUER"),
+    usdtIssuer: envOpt("XRPL_USDT_ISSUER"),
+    rlusdIssuer: envOpt("XRPL_RLUSD_ISSUER"),
   },
   merchant: {
     port: envInt("PORT", 8080),

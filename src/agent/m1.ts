@@ -18,9 +18,12 @@ interface Required402 {
   error: string;
   service: string;
   network: string;
-  asset: string;
+  asset: string; // "XRP" | "USDC" | …
+  currency?: string | null;
+  issuer?: string | null;
   payTo: string;
-  amountDrops: string;
+  amountDrops: string; // policy value (always XRP-drops)
+  settleAmount?: string; // what to pay in `asset` (drops for XRP, token units otherwise)
   nonce: string;
   memo: string;
   instructions?: string;
@@ -57,6 +60,8 @@ export interface RunM1Args {
   query?: string;
   /** Settlement chain for this run; defaults to config.chains.default (xrpl). */
   chain?: ChainId;
+  /** Payment asset the agent settles in: XRP | USDC | USDT | RLUSD. Default XRP. */
+  asset?: string;
   /** AI gateway model id for the reasoning step (M3). */
   model?: string;
   /** BYOK key for the reasoning step; else the configured gateway key is used. */
@@ -94,7 +99,8 @@ export async function runM1(
 ): Promise<{ hash: string; ledgerIndex: number; explorer: string }> {
   const emit = args.onEvent ?? noopSink;
   const query = args.query ?? config.agent.query;
-  const url = `http://127.0.0.1:${args.merchantPort}/research?q=${encodeURIComponent(query)}`;
+  const asset = (args.asset ?? "XRP").toUpperCase();
+  const url = `http://127.0.0.1:${args.merchantPort}/research?q=${encodeURIComponent(query)}&asset=${encodeURIComponent(asset)}`;
   const policy = buildPolicy(args.policy);
   const chain = resolveChain(args.chain);
   const adapter = getAdapter(chain);
@@ -108,9 +114,10 @@ export async function runM1(
     destination: string,
     amount: string,
     memo: string,
+    payAsset: string,
   ): Promise<{ hash: string; ledgerIndex: number; explorer: string; simulated: boolean }> => {
     if (liveMoney) {
-      const r = await adapter.sendPayment({ destination, amount, memo });
+      const r = await adapter.sendPayment({ destination, amount, memo, asset: payAsset });
       return { hash: r.hash, ledgerIndex: r.ledgerIndex, explorer: r.explorer, simulated: false };
     }
     const hash = `DEMO-${Date.now().toString(16)}-${Math.floor(Math.random() * 1e6).toString(16)}`;
@@ -224,7 +231,8 @@ export async function runM1(
   // ----- 4. Sign + submit the Payment with the memo binding it to the 402 -----
   await haltGuard();
   await emit({ type: "signing", amountDrops, destination: req402.payTo, kind: "merchant" });
-  const payment = await settle(req402.payTo, req402.amountDrops, req402.memo);
+  const settleAmount = req402.settleAmount ?? req402.amountDrops;
+  const payment = await settle(req402.payTo, settleAmount, req402.memo, req402.asset);
   const explorer = payment.explorer;
   await emit({
     type: "settled",
@@ -235,6 +243,8 @@ export async function runM1(
     amountDrops,
     chain,
     simulated: payment.simulated,
+    asset: req402.asset,
+    settleAmount,
   });
 
   // ----- 5. Unlock the data. Live: prove the tx on-ledger. Demo: skip proof. -----
@@ -303,10 +313,12 @@ export async function runM1(
       destination: feeRequest.destination,
       kind: "fee",
     });
+    // The platform fee is always settled in native XRP.
     const feePayment = await settle(
       feeRequest.destination,
       String(feeRequest.amountDrops),
       `leash-fee:${req402.nonce}`,
+      "XRP",
     );
     const feeExplorer = feePayment.explorer;
     await emit({

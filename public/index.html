@@ -478,6 +478,8 @@
         </div>
         <label>Settlement chain</label>
         <div class="seg" id="chain-seg" role="group" aria-label="Settlement chain"></div>
+        <label>Payment asset</label>
+        <div class="seg" id="asset-seg" role="group" aria-label="Payment asset"></div>
         <label for="task-input">Query</label>
         <input id="task-input" type="text" placeholder="compare AI coding tools 2026" />
         <div class="btn-row">
@@ -539,6 +541,7 @@
   const KEY_STORE = "leash.openrouter_key";
   const MODEL_STORE = "leash.model";   // selected gateway model id
   const CHAIN_STORE = "leash.chain";   // selected settlement chain
+  const ASSET_STORE = "leash.asset";   // selected payment asset
 
   function getKey() { return localStorage.getItem(KEY_STORE) || ""; }
   (function migrate() {
@@ -558,6 +561,7 @@
 
   let selectedModel = localStorage.getItem(MODEL_STORE) || null;
   let selectedChain = localStorage.getItem(CHAIN_STORE) || null;
+  let selectedAsset = localStorage.getItem(ASSET_STORE) || "XRP";
 
   function refreshByokStatus() {
     const k = getKey();
@@ -650,8 +654,32 @@
     } catch (e) { /* ignore */ }
   }
 
+  // Payment assets (XRP + stablecoins). All selectable; a token without a
+  // configured issuer is "demo" — it simulates in Money=Demo, errors in Live.
+  async function loadAssets() {
+    try {
+      const data = await fetch("/api/assets").then((r) => r.json());
+      const assets = data.assets || [];
+      if (!assets.some((a) => a.id === selectedAsset)) selectedAsset = data.default || "XRP";
+      const render = () => {
+        $("asset-seg").innerHTML = assets.map((a) =>
+          `<button type="button" data-asset="${a.id}" aria-pressed="${a.id === selectedAsset}">` +
+          `${a.label}${a.live ? "" : '<span class="soon">demo</span>'}</button>`).join("");
+        $("asset-seg").querySelectorAll("button").forEach((b) => {
+          b.addEventListener("click", () => {
+            selectedAsset = b.dataset.asset;
+            localStorage.setItem(ASSET_STORE, selectedAsset);
+            render();
+          });
+        });
+      };
+      render();
+    } catch (e) { /* ignore */ }
+  }
+
   loadModels();
   loadCredits();
+  loadAssets();
   loadChains();
 
   // ---------- Run mode (Agent / Money: demo | live) ----------
@@ -1025,7 +1053,10 @@
       case "settled": {
         const base = e.kind === "fee" ? "FEE" : "TX";
         const label = e.simulated ? `${base} SIMULATED` : `${base} SETTLED`;
-        const amt = e.amountDrops != null ? ` · ${dropsToXrp(e.amountDrops)} XRP` : "";
+        // Asset-aware amount: token settle amount for stablecoins, else XRP.
+        const amt = (e.asset && e.asset !== "XRP" && e.settleAmount != null)
+          ? ` · ${escapeHtml(e.settleAmount)} ${escapeHtml(e.asset)}`
+          : (e.amountDrops != null ? ` · ${dropsToXrp(e.amountDrops)} XRP` : "");
         const chainTag = e.chain ? ` <span style="color:var(--faint)">[${escapeHtml(e.chain)}]</span>` : "";
         const tag = e.simulated ? ` <span style="color:var(--blue)">[demo]</span>` : "";
         const explorerBtn = e.explorer && !e.simulated
@@ -1109,7 +1140,7 @@
       const resp = await fetch("/api/task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, model, chain, apiKey, minDrops, maxDrops, liveAgent, liveMoney }),
+        body: JSON.stringify({ query, model, chain, asset: selectedAsset, apiKey, minDrops, maxDrops, liveAgent, liveMoney }),
       });
       if (!resp.body) throw new Error("no response body");
       const reader = resp.body.getReader();
