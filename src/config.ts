@@ -39,10 +39,28 @@ const envFloat = (k: string, fallback: number): number => {
   return n;
 };
 
+// ----- Network selection (testnet default; mainnet is opt-in + guarded) -----
+// Lifted the testnet-only rule 2026-07-05. Mainnet requires XRPL_LIVE=1 AND an
+// explicit acknowledgement (LIVE_MONEY_ACK=1 or the UI ack). Real funds move
+// ONLY through the user's connected wallet — the server never holds a mainnet
+// seed (see the guard in loadOrFundWallet / the /api/quote non-custodial path).
+const live = envBool("XRPL_LIVE", false);
+const liveAck = envBool("LIVE_MONEY_ACK", false);
+const defaultRpc = live ? "wss://xrplcluster.com" : "wss://s.altnet.rippletest.net:51233";
+const defaultExplorer = live ? "https://livenet.xrpl.org" : "https://testnet.xrpl.org";
+
 export const config = {
   xrpl: {
-    rpc: env("XRPL_RPC", "wss://s.altnet.rippletest.net:51233"),
-    network: env("XRPL_NETWORK", "xrpl:1"),
+    // True when running against XRPL mainnet with real funds.
+    live,
+    // Whether the operator has acknowledged real-money risk (env or UI).
+    liveAck,
+    rpc: env("XRPL_RPC", defaultRpc),
+    network: env("XRPL_NETWORK", live ? "xrpl:0" : "xrpl:1"),
+    // Public explorer base for building tx links (network-aware).
+    explorer: env("XRPL_EXPLORER", defaultExplorer),
+    // Mainnet has no faucet; testnet does.
+    hasFaucet: !live,
     merchantSeed: envOpt("XRPL_MERCHANT_SEED"),
     agentSeed: envOpt("XRPL_AGENT_SEED"),
   },
@@ -78,11 +96,22 @@ export const config = {
   },
   // Policy caps, all in USD cents (the unit of account). Defaults: $50 budget,
   // $0.50 per-tx cap, $5 daily, $0.25 auto-pay threshold.
+  // On mainnet (live), caps are CLAMPED to safe ceilings no matter what env
+  // says — a fuse against a fat-fingered budget moving real money. Ceilings:
+  // per-tx $1, daily $5, total $20, approval threshold forced down to $0.25.
   policy: {
-    totalBudgetUsdCents: envInt("POLICY_TOTAL_BUDGET_USD_CENTS", 5000),
-    perTxCapUsdCents: envInt("POLICY_PER_TX_CAP_USD_CENTS", 50),
-    dailyCapUsdCents: envInt("POLICY_DAILY_CAP_USD_CENTS", 500),
-    approvalThresholdUsdCents: envInt("POLICY_APPROVAL_THRESHOLD_USD_CENTS", 25),
+    totalBudgetUsdCents: live
+      ? Math.min(envInt("POLICY_TOTAL_BUDGET_USD_CENTS", 2000), 2000)
+      : envInt("POLICY_TOTAL_BUDGET_USD_CENTS", 5000),
+    perTxCapUsdCents: live
+      ? Math.min(envInt("POLICY_PER_TX_CAP_USD_CENTS", 100), 100)
+      : envInt("POLICY_PER_TX_CAP_USD_CENTS", 50),
+    dailyCapUsdCents: live
+      ? Math.min(envInt("POLICY_DAILY_CAP_USD_CENTS", 500), 500)
+      : envInt("POLICY_DAILY_CAP_USD_CENTS", 500),
+    approvalThresholdUsdCents: live
+      ? Math.min(envInt("POLICY_APPROVAL_THRESHOLD_USD_CENTS", 25), 25)
+      : envInt("POLICY_APPROVAL_THRESHOLD_USD_CENTS", 25),
   },
   agent: {
     query: env("AGENT_QUERY", "compare AI coding tools 2026"),
@@ -116,5 +145,13 @@ export const config = {
   // policy engine governs the spend either way. This is the demo credit line.
   funding: {
     creditLimitUsdCents: envInt("CREDIT_LINE_USD_CENTS", 2500), // $25 demo credit line
+  },
+  // ----- Xaman (ex-XUMM) wallet connect -----
+  // Xaman signs on the user's phone via a QR/deep-link payload created with
+  // these developer credentials. Blank → the Xaman connect option is shown
+  // disabled (GemWallet / Crossmark need no server key). Never real user keys.
+  xaman: {
+    apiKey: envOpt("XUMM_API_KEY"),
+    apiSecret: envOpt("XUMM_API_SECRET"),
   },
 } as const;

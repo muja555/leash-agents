@@ -31,6 +31,15 @@ export async function loadOrFundWallet(
     const w = Wallet.fromSeed(seed);
     return w;
   }
+  // Mainnet has no faucet and we never auto-generate a server-held mainnet seed
+  // (that would be custodial with real funds). Fail loud with instructions.
+  if (config.xrpl.live) {
+    throw new Error(
+      `XRPL_LIVE=1 but no XRPL_${role.toUpperCase()}_SEED set. Mainnet has no faucet and Leash ` +
+        `never generates a server-held mainnet seed. Set an already-funded ${role} address/seed, ` +
+        `or use the connected-wallet (non-custodial) path for the agent.`,
+    );
+  }
   console.log(`\n[xrpl] no XRPL_${role.toUpperCase()}_SEED set — funding a fresh testnet wallet from the faucet…`);
   const { wallet, balance } = await client.fundWallet();
   const envKey = role === "merchant" ? "XRPL_MERCHANT_SEED" : "XRPL_AGENT_SEED";

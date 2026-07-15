@@ -1,6 +1,6 @@
 import { config } from "../../config.js";
 import { findModel } from "../catalog.js";
-import type { AiResult, CompleteArgs } from "../types.js";
+import type { AiResult, ChatArgs, ChatResult, CompleteArgs } from "../types.js";
 import * as openrouter from "./openrouter.js";
 
 /**
@@ -30,4 +30,18 @@ export async function route(args: CompleteArgs): Promise<AiResult> {
   const d = decideRoute(args.model, args.apiKey, config.ai.openrouterKey);
   if (d.via === "error") throw new Error(d.message ?? "no route");
   return openrouter.complete({ modelId: d.modelId as string, prompt: args.prompt, apiKey: d.key as string, pricing: model });
+}
+
+/** Tool-calling chat, same BYOK/OpenRouter routing as `route()`. */
+export async function routeChat(args: ChatArgs): Promise<ChatResult> {
+  const model = findModel(args.model);
+  const d = decideRoute(args.model, args.apiKey, config.ai.openrouterKey);
+  if (d.via === "error") throw new Error(d.message ?? "no route");
+  return openrouter.chat({
+    modelId: d.modelId as string,
+    messages: args.messages,
+    tools: args.tools,
+    apiKey: d.key as string,
+    pricing: model,
+  });
 }

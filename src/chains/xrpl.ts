@@ -62,6 +62,11 @@ export class XrplAdapter implements PaymentAdapter {
   }
 
   async fundFromFaucet(): Promise<{ address: string; balance: string }> {
+    if (!config.xrpl.hasFaucet) {
+      throw new Error(
+        "no faucet on mainnet — fund your connected wallet with real XRP (send to its address or use an on-ramp)",
+      );
+    }
     const w = await this.ensureWallet();
     const client = await getClient();
     const { balance } = await client.fundWallet(w);

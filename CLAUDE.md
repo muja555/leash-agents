@@ -14,13 +14,13 @@ This build is a **proof-of-skill demo first**, not a startup on day one. Its job
 - `README.md` — repo quickstart for M1 (terminal) and M2 (web app).
 
 ## Decisions already made — do NOT re-litigate
-- **XRPL is plumbing, not the bet.** The transferable skill is agentic payments / on-chain AI; the chain is a tool. **Testnet only** in this repo.
+- **XRPL is plumbing, not the bet.** The transferable skill is agentic payments / on-chain AI; the chain is a tool. **Testnet is the default; mainnet is an opt-in, guarded mode** (lifted the testnet-only rule 2026-07-05). Mainnet requires an explicit env flag (`XRPL_LIVE=1`) **and** an on-screen acknowledgement; real funds move **only** through the user's own connected wallet (GemWallet / Crossmark / Xaman) signing locally — **the server never custodies a mainnet seed**; mandatory low per-tx / daily / total caps apply on live.
 - **Rejected directions** (settled): a payments **SDK / rails / infra layer** (Stripe, Mastercard, Google own it); a **horizontal consumer spending-agent** app (Robinhood, Stripe Link, ChatGPT own it).
 - **The defensible layer** is the application + human-oversight UX. **The policy engine — control over autonomy — is THE differentiator.** Invest there; never stub it.
-- **Settlement:** XRPL testnet. M1 ships **direct-XRPL** (agent signs Payment with a memo nonce, merchant verifies on the ledger) because no hosted testnet x402 facilitator exists as of Jun 2026. **M3+ swap in `x402-xrpl`** if/when a testnet facilitator appears. The wire format is the outer skin; the loop's anatomy doesn't depend on it.
+- **Settlement:** XRPL — testnet by default, mainnet when `XRPL_LIVE=1`. M1 ships **direct-XRPL** (agent signs Payment with a memo nonce, merchant verifies on the ledger) because no hosted testnet x402 facilitator exists as of Jun 2026. **M3+ swap in `x402-xrpl`** if/when a testnet facilitator appears. The wire format is the outer skin; the loop's anatomy doesn't depend on it. On mainnet the payment is signed by the user's connected wallet (non-custodial two-phase: `/api/quote` → sign in-wallet → `/api/settle` verifies on the ledger).
 - **v1 frontend: web page.** Pivoted away from Telegram bot (2026-06-18, same day as the bot pivot) because the user found Telegram publishing/hosting nontrivial and prefers a URL anyone can open. RN + Expo mobile and the bot are both deferred; we still have the agent-event-sink abstraction from the bot path, which the web SSE stream reuses unchanged.
 - **AI cost model: BYOK only for v1.** User pastes a scoped + capped Anthropic API key in onboarding. On web, BYOK is stored in the browser's `localStorage` (key never leaves the browser; sent per-request to the backend over the SSE call). Funded-wallet model (Leash brokers XRP → Anthropic) is deferred until capital exists.
-- **Custody (demo):** backend custodies the agent wallet seed (encrypted at rest); the **policy engine gates signing**. Production would use scoped / smart-account permissions and rotation — state this openly.
+- **Custody:** on **testnet demo**, the backend may custody the agent wallet seed (the **policy engine gates signing**) for convenience. On **mainnet** the server holds **no** seed — the user connects their own XRPL wallet (GemWallet / Crossmark / Xaman) and signs locally; the policy engine still gates *before* an unsigned tx is ever handed out. Production would use scoped / smart-account permissions and rotation — state this openly.
 - **Build priority:** thin slice first, polish last. M1 already proved the loop.
 
 ## Stack (locked for v1)
@@ -28,7 +28,7 @@ This build is a **proof-of-skill demo first**, not a startup on day one. Its job
 - **Frontend (deferred):** Telegram bot (`src/bot/` removed; recoverable from git history at commit `e1729dc`); RN + Expo mobile companion.
 - **Backend:** Node.js + TypeScript · Express · Server-Sent Events for the live agent feed · in-memory state for the demo; Supabase / Postgres when persistence becomes load-bearing.
 - **AI:** Anthropic Claude via tool use (BYOK). Haiku 4.5 by default; Sonnet/Opus only when complexity demands. Aggressive prompt caching.
-- **XRPL:** `xrpl.js` · testnet faucet · public testnet explorer for proof. Direct-XRPL in M1+M2; `x402-xrpl` middleware swap-in when a testnet facilitator appears.
+- **XRPL:** `xrpl.js` · testnet faucet · public explorer for proof. **Network-aware:** testnet (`wss://s.altnet.rippletest.net:51233`, explorer `testnet.xrpl.org`, faucet) by default; mainnet (`wss://xrplcluster.com`, explorer `livenet.xrpl.org`, no faucet) when `XRPL_LIVE=1`. **Connected-wallet signing** (GemWallet / Crossmark browser extensions; Xaman via the XUMM API) for the non-custodial path. Direct-XRPL in M1+M2; `x402-xrpl` middleware swap-in when a testnet facilitator appears.
 
 ## Milestones (build in this order)
 1. **M1 — thin slice (DONE 2026-06-17):** agent makes ONE real XRPL testnet payment via the policy engine; logged with amount/service/hash/ledger; tx opens in the public explorer.
@@ -49,7 +49,7 @@ Implementation: `src/policy/engine.ts` (the `evaluate()` function). All M1+ paym
 - When unsure about XRPL specifics, consult the XRPL AI Starter Kit docs rather than guessing.
 
 ## Out of scope (for now)
-Mainnet · multiple task types · production-grade custody · funded-wallet AI billing · server-side key persistence · the regional/MENA fintech idea · buying or holding XRP.
+multiple task types · production-grade custody · funded-wallet AI billing · server-side key persistence · the regional/MENA fintech idea · buying or holding XRP. *(Mainnet is now in scope as an opt-in, connected-wallet-only guarded mode — see the live decision above. Server-side mainnet key custody remains out of scope.)*
 
 ## Current progress (2026-07-02)
 

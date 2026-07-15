@@ -74,6 +74,20 @@ export interface RunM1Args {
   userId?: string;
   /** Per-run min/max overrides from the caller; applied in the policy engine. */
   policy?: PolicyOverrides;
+  /**
+   * Seed spend state (cumulative across runs). Default freshSpendState(). The
+   * daily-cap + total-budget gates evaluate against this, so passing the prior
+   * total makes the caps actually accumulate session-wide.
+   */
+  initialSpend?: SpendState;
+  /** Called after every recorded payment so the caller can persist the tally. */
+  onSpendRecorded?: (spend: SpendState) => void;
+  /**
+   * Per-call merchant price in USD cents (demo override). Lets the autonomy band
+   * (min/approval/max) be exercised — e.g. a $0.30 call between a $0.25 min and
+   * $0.50 max triggers the Approve/Deny gate. Defaults to config.x402 price.
+   */
+  priceUsdCents?: number;
   /** Agent mode: live = call the AI to reason; demo = deterministic. Default true. */
   liveAgent?: boolean;
   /** Money mode: live = real on-chain payment; demo = simulated settlement. Default true. */
@@ -112,9 +126,13 @@ export async function runM1(
   // "Auto" → pick the settle asset from wallet holdings (live) or default XRP.
   let asset = (args.asset ?? "AUTO").toUpperCase();
   if (asset === "AUTO") asset = useCredit ? "XRP" : liveMoney ? await adapter.pickAutoAsset() : "XRP";
-  const url = `http://127.0.0.1:${args.merchantPort}/research?q=${encodeURIComponent(query)}&asset=${encodeURIComponent(asset)}`;
+  // Optional per-call price override (demo) → flows into the merchant challenge.
+  const priceParam =
+    args.priceUsdCents && args.priceUsdCents > 0 ? `&price=${Math.round(args.priceUsdCents)}` : "";
+  const url = `http://127.0.0.1:${args.merchantPort}/research?q=${encodeURIComponent(query)}&asset=${encodeURIComponent(asset)}${priceParam}`;
   const policy = buildPolicy(args.policy);
-  let spend = freshSpendState();
+  // Seed from the caller's cumulative spend so caps accumulate across runs.
+  let spend = args.initialSpend ?? freshSpendState();
 
   // Settle a payment. Credit-funded → the provider covers on-chain settlement
   // and Leash draws the USD value from the credit line (throws if over-limit).
@@ -320,6 +338,13 @@ export async function runM1(
 
   // ----- 6. Record the spend + log the payment -----
   spend = recordSpend(spend, paymentRequest);
+  args.onSpendRecorded?.(spend);
+  await emit({
+    type: "spend_update",
+    spentTotalUsdCents: spend.totalSpentUsdCents,
+    spentTodayUsdCents: spend.spentTodayUsdCents,
+    totalBudgetUsdCents: policy.totalBudgetUsdCents,
+  });
   await appendPayment({
     ts: new Date().toISOString(),
     service: paymentRequest.service,
@@ -362,6 +387,13 @@ export async function runM1(
       source: feePayment.source,
     });
     spend = recordSpend(spend, feeRequest);
+    args.onSpendRecorded?.(spend);
+    await emit({
+      type: "spend_update",
+      spentTotalUsdCents: spend.totalSpentUsdCents,
+      spentTodayUsdCents: spend.spentTodayUsdCents,
+      totalBudgetUsdCents: policy.totalBudgetUsdCents,
+    });
     await appendPayment({
       ts: new Date().toISOString(),
       service: feeRequest.service,

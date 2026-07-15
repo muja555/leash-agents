@@ -91,14 +91,20 @@ function txMemoString(tx: LedgerTxResult): string | null {
   }
 }
 
-function issue402(res: Response, payTo: string, assetId: string): void {
+function issue402(res: Response, payTo: string, assetId: string, priceOverride?: number): void {
   const asset = resolveAsset(assetId);
   const nonce = newNonce();
+  // Per-call price: config default, or a demo override (clamped $0.01–$100) so
+  // the autonomy band (min/approval/max) can be exercised end-to-end.
+  const priceUsdCents =
+    priceOverride && priceOverride > 0
+      ? Math.min(Math.round(priceOverride), 10_000)
+      : config.x402.priceUsdCents;
   // Policy always gates on the XRP-drops value; settlement is in the chosen asset.
-  const settleAmount = settleAmountFor(config.x402.priceUsdCents, asset.id);
+  const settleAmount = settleAmountFor(priceUsdCents, asset.id);
   pending.set(nonce, {
     service: SERVICE,
-    amountUsdCents: String(config.x402.priceUsdCents),
+    amountUsdCents: String(priceUsdCents),
     settleAmount,
     asset: asset.id,
     currency: asset.currency,
@@ -114,7 +120,7 @@ function issue402(res: Response, payTo: string, assetId: string): void {
     currency: asset.currency ?? null,
     issuer: asset.issuer ?? null,
     payTo,
-    amountUsdCents: config.x402.priceUsdCents, // policy value (USD cents)
+    amountUsdCents: priceUsdCents, // policy value (USD cents)
     settleAmount, // what to actually pay in `asset`
     nonce,
     memo: nonce,
@@ -258,7 +264,9 @@ export async function buildMerchantApp(): Promise<{ app: Express; payTo: string 
     }
     if (!txHash) {
       const assetId = typeof req.query.asset === "string" ? req.query.asset : "XRP";
-      issue402(res, payTo, assetId);
+      const priceRaw = typeof req.query.price === "string" ? Number(req.query.price) : NaN;
+      const priceOverride = Number.isFinite(priceRaw) && priceRaw > 0 ? priceRaw : undefined;
+      issue402(res, payTo, assetId, priceOverride);
       return;
     }
     await verifyAndUnlock(txHash, query, res);

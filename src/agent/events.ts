@@ -55,8 +55,30 @@ export type AgentEvent =
     }
   | { type: "approval_resolved"; decision: "approve" | "deny"; kind: "merchant" | "fee" }
   | { type: "halted"; reason: string }
+  | {
+      type: "spend_update";
+      spentTotalUsdCents: number; // cumulative across runs (session)
+      spentTodayUsdCents: number;
+      totalBudgetUsdCents: number;
+    }
   | { type: "thinking"; text: string }
   | { type: "synthesis"; text: string; model: string; costUsdCents: number }
+  // --- tool-agent loop: the model PROPOSES an action; the runtime executes it
+  // through the policy pipeline and reports the outcome back to the model. ---
+  | {
+      type: "tool_call";
+      callId: string;
+      name: string; // "pay_for_resource" | "get_budget" | …
+      args: Record<string, unknown>; // validated args (never the raw model JSON)
+    }
+  | {
+      type: "tool_result";
+      callId: string;
+      name: string;
+      ok: boolean; // false = denied / invalid / failed — the model must adapt
+      summary: string; // short human-readable outcome for the UI
+    }
+  | { type: "assistant_text"; text: string; step: number }
   | { type: "unlocked"; query: string; results: string[] }
   | {
       type: "complete";
@@ -119,6 +141,15 @@ export const consoleSink: EventSink = (e) => {
       break;
     case "synthesis":
       console.log(`[agent] ${e.model} synthesis (${e.costUsdCents}¢):\n${e.text}`);
+      break;
+    case "tool_call":
+      console.log(`[agent] model proposes ${e.name}(${JSON.stringify(e.args)})`);
+      break;
+    case "tool_result":
+      console.log(`[agent] ${e.name} → ${e.ok ? "ok" : "FAILED"}: ${e.summary}`);
+      break;
+    case "assistant_text":
+      if (e.text) console.log(`[agent] (step ${e.step}) ${e.text}`);
       break;
     case "signing":
       console.log(`[agent] signing + broadcasting Payment…`);

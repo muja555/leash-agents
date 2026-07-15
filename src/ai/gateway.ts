@@ -1,7 +1,7 @@
 import { config } from "../config.js";
 import { MODEL_CATALOG } from "./catalog.js";
-import { route } from "./providers/router.js";
-import type { AiGateway, AiModel, AiResult, CompleteArgs } from "./types.js";
+import { route, routeChat } from "./providers/router.js";
+import type { AiGateway, AiModel, AiResult, ChatArgs, ChatResult, CompleteArgs } from "./types.js";
 
 export { MODEL_CATALOG } from "./catalog.js";
 
@@ -21,6 +21,10 @@ export class OpenRouterGateway implements AiGateway {
 
   complete(args: CompleteArgs): Promise<AiResult> {
     return route(args);
+  }
+
+  chat(args: ChatArgs): Promise<ChatResult> {
+    return routeChat(args);
   }
 }
 

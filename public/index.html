@@ -9,25 +9,27 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0B0E13; --panel:#141A22; --panel-2:#1B232E; --raised:#212B38;
-    --line:#28323E; --line-soft:#1F2832;
-    --text:#EAF0F7; --muted:#94A2B3; --faint:#5F6C7D;
-    --gold:#E8B23A; --gold-dim:#3a2f16;
-    --green:#41C46B; --green-dim:#16301f;
-    --red:#EB5757; --red-dim:#341a1c;
-    --blue:#5C9CFF; --blue-dim:#16243f;
-    --radius:18px;
-    --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -24px rgba(0,0,0,.8);
-    --card-bg:linear-gradient(180deg, #1A222D 0%, #141A22 100%);
+    /* Base-UI / shadcn-flavored neutral surface scale + one accent per role.
+       Flatter, cooler, tighter radii than the old gradient-heavy theme. */
+    --ink:#0A0C10; --panel:#111419; --panel-2:#171B22; --raised:#1E242D;
+    --line:#252B34; --line-soft:#1B212A;
+    --text:#F2F5F9; --muted:#98A2B3; --faint:#616B7A;
+    --gold:#E8B23A; --gold-dim:#332a15;
+    --green:#3FC46A; --green-dim:#14301e;
+    --red:#F0616B; --red-dim:#33191d;
+    --blue:#6AA2FF; --blue-dim:#16233c;
+    --radius:12px;        /* cards/modals */
+    --radius-sm:8px;      /* buttons/inputs/chips (shadcn-like) */
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -20px rgba(0,0,0,.85);
+    --card-bg:#12161C;    /* flat surface, no gradient */
   }
   *{box-sizing:border-box;}
   body{margin:0; background:var(--ink); color:var(--text);
     font-family:'Inter',system-ui,sans-serif; line-height:1.55;
     font-size:15px; -webkit-font-smoothing:antialiased;
     background-image:
-      radial-gradient(1100px 560px at 82% -12%, rgba(92,156,255,.10), transparent 60%),
-      radial-gradient(820px 460px at 2% -4%, rgba(232,178,58,.08), transparent 55%),
-      radial-gradient(700px 700px at 100% 100%, rgba(65,196,107,.04), transparent 60%);
+      radial-gradient(1000px 520px at 85% -18%, rgba(106,162,255,.06), transparent 60%),
+      radial-gradient(760px 420px at -2% -6%, rgba(232,178,58,.045), transparent 58%);
     background-attachment:fixed;
     min-height:100vh;}
   .wrap{max-width:1200px; margin:0 auto; padding:0 24px 90px;}
@@ -55,7 +57,7 @@
   .status.working .dot{animation:pulse 1.2s ease-in-out infinite;}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(65,196,107,.5);}50%{box-shadow:0 0 0 5px rgba(65,196,107,0);}}
   header .spacer{flex:1;}
-  .kill-btn{font-family:'JetBrains Mono'; font-size:12px; padding:8px 14px; border-radius:10px;
+  .kill-btn{font-family:'JetBrains Mono'; font-size:12px; padding:8px 14px; border-radius:var(--radius-sm);
     background:rgba(235,87,87,.08); color:var(--red); border:1px solid rgba(235,87,87,.25);
     cursor:pointer; letter-spacing:.04em; transition:all .15s;}
   .kill-btn:hover{background:var(--red-dim); border-color:var(--red);}
@@ -136,15 +138,18 @@
   /* form rows */
   label{display:block; font-family:'JetBrains Mono'; font-size:10.5px; letter-spacing:.12em;
     text-transform:uppercase; color:var(--faint); margin:16px 0 7px;}
-  input[type="text"], input[type="password"]{width:100%; padding:13px 15px;
-    background:rgba(11,14,19,.7); border:1px solid var(--line); border-radius:12px;
+  input[type="text"], input[type="password"], #price-input{width:100%; padding:13px 15px;
+    background:rgba(11,14,19,.7); border:1px solid var(--line); border-radius:var(--radius-sm);
     color:var(--text); font-family:'Inter'; font-size:14px; outline:none;
     transition:border-color .15s, box-shadow .15s;}
+  #price-input::-webkit-outer-spin-button,
+  #price-input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+  #price-input{-moz-appearance:textfield;}
   input:focus{border-color:var(--blue); box-shadow:0 0 0 3px rgba(92,156,255,.15);}
   input::placeholder{color:var(--faint);}
 
   .btn-row{display:flex; gap:9px; margin-top:14px; flex-wrap:wrap;}
-  .btn{font-family:'JetBrains Mono'; font-size:12.5px; padding:10px 15px; border-radius:11px;
+  .btn{font-family:'JetBrains Mono'; font-size:12.5px; padding:10px 15px; border-radius:var(--radius-sm);
     border:1px solid var(--line); background:var(--panel-2); color:var(--text); cursor:pointer;
     letter-spacing:.04em; transition:transform .1s, background .15s, box-shadow .15s;}
   .btn:hover:not(:disabled){transform:translateY(-1px);}
@@ -167,7 +172,7 @@
 
   /* provider segmented control */
   .seg{display:grid; grid-template-columns:repeat(2,1fr); gap:7px; margin-top:4px;}
-  .seg button{font-family:'JetBrains Mono'; font-size:12px; padding:9px 10px; border-radius:10px;
+  .seg button{font-family:'JetBrains Mono'; font-size:12px; padding:9px 10px; border-radius:var(--radius-sm);
     border:1px solid var(--line); background:rgba(11,14,19,.5); color:var(--muted); cursor:pointer;
     letter-spacing:.02em; transition:all .15s; display:flex; align-items:center; justify-content:center;
     gap:7px; position:relative;}
@@ -180,7 +185,7 @@
 
   /* model select + credits */
   select{width:100%; padding:12px 14px; background:rgba(11,14,19,.7); border:1px solid var(--line);
-    border-radius:12px; color:var(--text); font-family:'Inter'; font-size:14px; outline:none;
+    border-radius:var(--radius-sm); color:var(--text); font-family:'Inter'; font-size:14px; outline:none;
     cursor:pointer; transition:border-color .15s, box-shadow .15s;
     appearance:none; -webkit-appearance:none;
     background-image:linear-gradient(45deg,transparent 50%,var(--faint) 50%),linear-gradient(135deg,var(--faint) 50%,transparent 50%);
@@ -207,6 +212,7 @@
   .tg button[aria-pressed="true"]{color:var(--text);}
   .tg button[data-v="demo"][aria-pressed="true"]{background:var(--blue-dim); color:var(--blue);}
   .tg button[data-v="live"][aria-pressed="true"]{background:var(--green-dim); color:var(--green);}
+  .tg button[data-v="tools"][aria-pressed="true"]{background:var(--gold-dim); color:var(--gold);}
   .tg.warn button[data-v="live"][aria-pressed="true"]{background:var(--gold-dim); color:var(--gold);}
   .mode-hint{font-family:'JetBrains Mono'; font-size:10.5px; color:var(--faint);}
   .mode-hint.warn{color:var(--gold);}
@@ -230,7 +236,7 @@
   .policy-inputs .field label{margin:0 0 6px;}
   .policy-inputs .input-xrp{position:relative;}
   .policy-inputs input[type="number"]{width:100%; padding:11px 44px 11px 13px;
-    background:rgba(11,14,19,.7); border:1px solid var(--line); border-radius:12px;
+    background:rgba(11,14,19,.7); border:1px solid var(--line); border-radius:var(--radius-sm);
     color:var(--text); font-family:'JetBrains Mono'; font-size:14px; outline:none;
     transition:border-color .15s, box-shadow .15s; -moz-appearance:textfield;}
   .policy-inputs input[type="number"]::-webkit-outer-spin-button,
@@ -381,6 +387,42 @@
   .event.approval_resolved.deny{--accent:var(--red);} .event.approval_resolved.deny b{color:var(--red);}
   .event.halted{--accent:var(--red); background:var(--red-dim); color:var(--red);}
   .event.thinking{--accent:var(--blue); color:var(--muted); font-style:italic;}
+  .event.tool_call{--accent:var(--gold); font-family:'JetBrains Mono'; font-size:12px;}
+  .event.tool_call b{color:var(--gold);}
+  .event.tool_result{--accent:var(--green); font-family:'JetBrains Mono'; font-size:12px;}
+  .event.tool_result.fail{--accent:var(--red); color:var(--red);}
+  .event.assistant_text{--accent:var(--blue);}
+  .event.assistant_text b{color:var(--blue);}
+
+  /* live/testnet banner */
+  .live-banner{margin:14px 0 -6px; padding:10px 16px; border-radius:12px; font-size:13px;
+    font-family:'JetBrains Mono'; text-align:center; border:1px solid var(--line);}
+  .live-banner.test{background:rgba(90,160,255,.06); color:var(--muted); border-color:rgba(90,160,255,.18);}
+  .live-banner.on{background:var(--red-dim); color:var(--red); border-color:rgba(255,90,90,.4);}
+  .live-banner b{color:inherit;}
+
+  /* wallet-picker */
+  .wallet-choices{display:flex; flex-direction:column; gap:9px; margin:4px 0 12px;}
+  .wallet-choice{display:grid; grid-template-columns:1fr auto; grid-template-rows:auto auto;
+    gap:2px 10px; text-align:left; padding:12px 14px; border-radius:12px; cursor:pointer;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text); transition:border-color .15s, background .15s;}
+  .wallet-choice:hover:not(:disabled){border-color:rgba(232,178,58,.4); background:var(--raised);}
+  .wallet-choice:disabled{opacity:.5; cursor:not-allowed;}
+  .wallet-choice .wc-name{font-family:'Space Grotesk'; font-weight:600; font-size:15px;}
+  .wallet-choice .wc-sub{grid-column:1; font-size:11.5px; color:var(--muted);}
+  .wallet-choice .wc-state{grid-column:2; grid-row:1 / span 2; align-self:center; justify-self:end;
+    font-family:'JetBrains Mono'; font-size:10.5px; color:var(--faint);}
+  .wallet-choice .wc-state.ok{color:var(--green);} .wallet-choice .wc-state.no{color:var(--muted);}
+  .xaman-qr{display:flex; flex-direction:column; align-items:center; gap:8px; margin:6px 0 12px;}
+  .xaman-qr[hidden]{display:none;}  /* beat the class selector over UA [hidden] */
+  .xaman-qr img{width:190px; height:190px; border-radius:12px; background:#fff; padding:8px;}
+  /* wallet-picker has a single action button — make it fill the row */
+  #wallet-overlay .modal-actions{grid-template-columns:1fr;}
+  .xaman-qr a{color:var(--gold); font-family:'JetBrains Mono'; font-size:12px; text-decoration:none;}
+  .modal-err{color:var(--red); font-size:12.5px; margin:2px 0 10px; text-align:center;}
+  .wallet-connected{display:flex; align-items:center; gap:8px; margin-top:8px; font-family:'JetBrains Mono';
+    font-size:11px; color:var(--green);}
+  .wallet-connected .wc-disc{margin-left:auto; color:var(--muted); cursor:pointer; text-decoration:underline; background:none; border:none; font:inherit;}
 
   .footer-note{margin-top:34px; padding-top:22px; border-top:1px solid var(--line-soft);
     font-family:'JetBrains Mono'; font-size:11.5px; color:var(--faint); display:flex;
@@ -396,11 +438,13 @@
 
   <header>
     <div class="mark"><span class="glyph">⛓</span>LEASH<span class="dot">.</span></div>
-    <span class="tag">M2 · web · BYOK</span>
+    <span class="tag">web · BYOK · connected-wallet</span>
     <div class="spacer"></div>
     <span class="status" id="status"><span class="dot"></span>IDLE</span>
     <button class="kill-btn" id="kill-btn" title="Kill switch">🛑 KILL</button>
   </header>
+
+  <div id="live-banner" hidden></div>
 
   <section class="hero">
     <h1>Put your AI agent on a&nbsp;<em>leash.</em></h1>
@@ -440,11 +484,21 @@
         <h2>Policy <span class="badge">6 GATES</span></h2>
         <p class="lead">Set the agent's autonomy band. Payments <b style="color:var(--green)">at or under min</b> pay automatically; <b style="color:var(--red)">over max</b> are blocked; in between needs your approval.</p>
         <div id="policy"></div>
+        <label for="price-input" style="margin-top:16px">Test a call price (USD) <span style="color:var(--faint);text-transform:none;letter-spacing:0">· see which gate it hits</span></label>
+        <input id="price-input" type="number" min="0.01" step="0.01" value="0.01" />
+        <span class="mode-hint" id="price-hint" style="margin-top:6px;display:block"></span>
       </div>
 
       <div class="card">
         <h2>Wallet <span class="badge m3">M3</span></h2>
         <p class="lead">This is <b style="color:var(--text)">your own</b> wallet — you fund it, you control it. <b style="color:var(--text)">It is not a deposit</b>: the money never goes to Leash, which never holds or moves it.</p>
+        <div class="mode-row" style="margin-bottom:14px">
+          <span class="mode-k">Money</span>
+          <div class="tg" id="money-tg" role="group" aria-label="Money mode">
+            <button type="button" data-v="demo">Demo</button><button type="button" data-v="live">Live</button>
+          </div>
+          <span class="mode-hint" id="money-hint"></span>
+        </div>
         <div id="wallet"></div>
         <div class="infonote">
           <div class="row"><span>→</span><span><b>Fund it:</b> on testnet, top up free with the faucet button. In production you'd send crypto to this address yourself (or via an on-ramp).</span></div>
@@ -456,6 +510,13 @@
       <div class="card">
         <h2>Credit line <span class="badge">GOVERNED</span></h2>
         <p class="lead">An alternative funding source — the agent spends borrowed credit (a provider fronts settlement). <b style="color:var(--text)">The same policy engine governs it</b>: a credit limit is a fuse, Leash is the steering wheel.</p>
+        <div class="mode-row" style="margin-bottom:14px">
+          <span class="mode-k">Credit</span>
+          <div class="tg" id="credit-tg" role="group" aria-label="Credit line mode">
+            <button type="button" data-v="demo">Demo</button><button type="button" data-v="live">Live</button>
+          </div>
+          <span class="mode-hint" id="credit-hint"></span>
+        </div>
         <div id="creditline"></div>
       </div>
     </div>
@@ -465,21 +526,14 @@
       <div class="card">
         <h2>Delegate a task</h2>
         <p class="lead">The agent pays per use to unlock paid research data, with the policy engine gating every payment. Pick run mode + settlement chain.</p>
-        <label>Run mode</label>
+        <label>Agent mode <span style="color:var(--faint);text-transform:none;letter-spacing:0">· money mode lives in the Wallet card</span></label>
         <div class="modes">
           <div class="mode-row">
             <span class="mode-k">Agent</span>
             <div class="tg" id="agent-tg" role="group" aria-label="Agent mode">
-              <button type="button" data-v="demo">Demo</button><button type="button" data-v="live">Live</button>
+              <button type="button" data-v="demo">Demo</button><button type="button" data-v="live">Live</button><button type="button" data-v="tools">Tools</button>
             </div>
             <span class="mode-hint" id="agent-hint"></span>
-          </div>
-          <div class="mode-row">
-            <span class="mode-k">Money</span>
-            <div class="tg" id="money-tg" role="group" aria-label="Money mode">
-              <button type="button" data-v="demo">Demo</button><button type="button" data-v="live">Live</button>
-            </div>
-            <span class="mode-hint" id="money-hint"></span>
           </div>
         </div>
         <label>Settlement chain</label>
@@ -536,6 +590,38 @@
       <button class="btn launch" id="approval-approve">✓ Approve &amp; sign</button>
     </div>
     <div class="modal-foot">No signature is produced until you choose. Auto-denies in 2&nbsp;min.</div>
+  </div>
+</div>
+
+<!-- wallet-picker modal (reuses the approval modal styling) -->
+<div class="modal-overlay" id="wallet-overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wallet-modal-title">
+    <div class="modal-badge">👛 CONNECT · NON-CUSTODIAL</div>
+    <h3 id="wallet-modal-title">Connect an XRPL wallet</h3>
+    <p class="modal-reason">You sign in your <b style="color:var(--text)">own</b> wallet — Leash never sees your key. Pick how to connect.</p>
+    <div class="wallet-choices">
+      <button type="button" class="wallet-choice" data-wallet="gem">
+        <span class="wc-name">GemWallet</span><span class="wc-sub">Browser extension · popup</span>
+        <span class="wc-state" id="wc-gem">…</span>
+      </button>
+      <button type="button" class="wallet-choice" data-wallet="crossmark">
+        <span class="wc-name">Crossmark</span><span class="wc-sub">Browser extension · popup</span>
+        <span class="wc-state" id="wc-crossmark">…</span>
+      </button>
+      <button type="button" class="wallet-choice" data-wallet="xaman">
+        <span class="wc-name">Xaman</span><span class="wc-sub">Mobile app · scan QR</span>
+        <span class="wc-state" id="wc-xaman">…</span>
+      </button>
+    </div>
+    <div id="xaman-qr" class="xaman-qr" hidden>
+      <img id="xaman-qr-img" alt="Scan with Xaman" />
+      <a id="xaman-qr-link" href="#" target="_blank" rel="noopener">Open in Xaman ↗</a>
+      <div class="modal-foot">Scan with the Xaman app, then approve. Waiting for signature…</div>
+    </div>
+    <div id="wallet-faucet-row"></div>
+    <p class="modal-err" id="wallet-err" hidden></p>
+    <div class="modal-actions"><button type="button" class="btn" id="wallet-close">Close</button></div>
+    <div class="modal-foot">On testnet, switch your wallet to <b style="color:var(--text)">XRPL Testnet</b> and fund it from the faucet.</div>
   </div>
 </div>
 
@@ -706,21 +792,73 @@
       ? "agent spends a governed credit line (a provider settles); policy still gates every payment"
       : "agent pays from its own non-custodial wallet";
   }
+  // ---------- Credit line mode (Demo | Live) ----------
+  // Demo = the in-memory simulated line (UI + logic are fake, $25 seed).
+  // Live = a real credit provider fronts settlement — not wired yet, so we
+  // show an honest empty state instead of a fabricated limit.
+  const CREDIT_MODE_STORE = "leash.creditLive";
+  let liveCredit = localStorage.getItem(CREDIT_MODE_STORE) === "1"; // default: demo
+  function renderCreditMode() {
+    $("credit-tg").querySelectorAll("button").forEach((b) =>
+      b.setAttribute("aria-pressed", String((b.dataset.v === "live") === liveCredit)));
+    $("credit-tg").classList.toggle("warn", liveCredit);
+    const ch = $("credit-hint");
+    ch.textContent = liveCredit ? "⚠ real provider" : "simulated · demo line";
+    ch.classList.toggle("warn", liveCredit);
+  }
+  function renderCreditLive() {
+    // No real credit provider is integrated. Be honest: this is where a real
+    // lender's API (e.g. ClawCredit / t54) would return your approved limit —
+    // not a seeded demo number. Nothing to draw on until that's wired.
+    $("creditline").innerHTML =
+      `<div class="wallet-row"><span class="k">available</span><span class="v">—</span></div>` +
+      `<span class="mode-hint warn" style="display:block;margin:2px 0 8px">⚠ Live — a real credit provider would front settlement and return your approved limit. No provider is wired yet, so there's no live line to draw on. The policy engine still governs it the moment there is.</span>` +
+      `<div class="btn-row"><button class="btn full" id="credit-connect-live" disabled>🔗 Connect a real provider (not wired)</button></div>`;
+  }
   function renderCreditPanel(c) {
     if (!c) return;
+    if (!c.connected) {
+      // No line provisioned yet — nothing is borrowable until the user opts in.
+      $("creditline").innerHTML =
+        `<div class="wallet-row"><span class="k">available</span><span class="v">—</span></div>` +
+        `<span class="mode-hint" style="display:block;margin:2px 0 8px">Not connected — a provider would front up to ${centsToUsd(c.limitUsdCents)} once you connect.</span>` +
+        `<div class="btn-row"><button class="btn gold full" id="credit-connect">🔗 Connect a credit line</button></div>`;
+      $("credit-connect").addEventListener("click", async () => {
+        try { const r = await fetch("/api/funding/connect", { method: "POST" }).then((x) => x.json()); renderCreditPanel(r.credit); } catch (e) {}
+      });
+      return;
+    }
     $("creditline").innerHTML =
       `<div class="wallet-row"><span class="k">available</span><span class="v gold">${centsToUsd(c.availableUsdCents)}</span></div>` +
       `<div class="wallet-row"><span class="k">used</span><span class="v">${centsToUsd(c.usedUsdCents)}</span></div>` +
       `<div class="wallet-row"><span class="k">limit</span><span class="v">${centsToUsd(c.limitUsdCents)}</span></div>` +
-      `<div class="btn-row"><button class="btn" id="credit-reset">↺ Reset credit line</button></div>`;
+      `<div class="btn-row"><button class="btn" id="credit-reset">↺ Reset credit line</button>` +
+      `<button class="btn" id="credit-disconnect">Disconnect</button></div>`;
     $("credit-reset").addEventListener("click", async () => {
       try { const r = await fetch("/api/funding/reset", { method: "POST" }).then((x) => x.json()); renderCreditPanel(r.credit); } catch (e) {}
     });
+    $("credit-disconnect").addEventListener("click", async () => {
+      try { const r = await fetch("/api/funding/disconnect", { method: "POST" }).then((x) => x.json()); renderCreditPanel(r.credit); } catch (e) {}
+    });
   }
   async function loadFunding() {
+    renderCreditMode();
+    if (liveCredit) {
+      // Live mode: don't touch the demo /api/funding line — render the honest
+      // real-provider placeholder instead.
+      renderCreditLive();
+      renderFundingSeg();
+      return;
+    }
     try { const d = await fetch("/api/funding").then((r) => r.json()); renderCreditPanel(d.credit); } catch (e) {}
     renderFundingSeg();
   }
+  $("credit-tg").querySelectorAll("button").forEach((b) =>
+    b.addEventListener("click", () => {
+      liveCredit = b.dataset.v === "live";
+      localStorage.setItem(CREDIT_MODE_STORE, liveCredit ? "1" : "0");
+      loadFunding();
+    }));
   $("funding-seg").querySelectorAll("button").forEach((b) =>
     b.addEventListener("click", () => {
       selectedFunding = b.dataset.funding;
@@ -732,29 +870,37 @@
 
   // ---------- Run mode (Agent / Money: demo | live) ----------
   const MODE_STORE = "leash.modes";
-  let liveAgent = false; // default: deterministic agent (no key needed)
+  // Agent mode: demo (deterministic) | live (AI synthesis) | tools (the model
+  // plans and PROPOSES payments as tool calls; policy still executes them).
+  let agentMode = "demo";
   let liveMoney = true;  // default: real on-chain testnet payment (the showcase)
   try {
     const m = JSON.parse(localStorage.getItem(MODE_STORE) || "{}");
-    if (typeof m.agent === "boolean") liveAgent = m.agent;
+    if (m.agentMode === "demo" || m.agentMode === "live" || m.agentMode === "tools") agentMode = m.agentMode;
+    else if (typeof m.agent === "boolean") agentMode = m.agent ? "live" : "demo"; // legacy boolean store
     if (typeof m.money === "boolean") liveMoney = m.money;
   } catch (e) { /* defaults */ }
-  function saveModes() { localStorage.setItem(MODE_STORE, JSON.stringify({ agent: liveAgent, money: liveMoney })); }
+  function saveModes() { localStorage.setItem(MODE_STORE, JSON.stringify({ agentMode, agent: agentMode !== "demo", money: liveMoney })); }
   function renderModes() {
     $("agent-tg").querySelectorAll("button").forEach((b) =>
-      b.setAttribute("aria-pressed", String((b.dataset.v === "live") === liveAgent)));
+      b.setAttribute("aria-pressed", String(b.dataset.v === agentMode)));
     $("money-tg").querySelectorAll("button").forEach((b) =>
       b.setAttribute("aria-pressed", String((b.dataset.v === "live") === liveMoney)));
     $("money-tg").classList.toggle("warn", liveMoney);
-    $("agent-hint").textContent = liveAgent ? "real AI — needs a key" : "deterministic · no key";
+    $("agent-hint").textContent = agentMode === "tools"
+      ? "model proposes payments · policy executes — needs a key"
+      : agentMode === "live" ? "real AI — needs a key" : "deterministic · no key";
     const mh = $("money-hint");
     mh.textContent = liveMoney ? "⚠ real testnet payment" : "simulated · no on-chain tx";
     mh.classList.toggle("warn", liveMoney);
   }
   $("agent-tg").querySelectorAll("button").forEach((b) =>
-    b.addEventListener("click", () => { liveAgent = b.dataset.v === "live"; saveModes(); renderModes(); }));
+    b.addEventListener("click", () => { agentMode = b.dataset.v || "demo"; saveModes(); renderModes(); }));
   $("money-tg").querySelectorAll("button").forEach((b) =>
-    b.addEventListener("click", () => { liveMoney = b.dataset.v === "live"; saveModes(); renderModes(); }));
+    b.addEventListener("click", () => {
+      liveMoney = b.dataset.v === "live"; saveModes(); renderModes();
+      loadWallet(); // connected-run button reflects money mode
+    }));
   renderModes();
 
   // ---------- Kill switch (wired through the server-side policy engine) ----------
@@ -764,6 +910,15 @@
     statusEl.classList.toggle("halted", halted);
     if (halted) statusEl.classList.remove("working");
     statusEl.innerHTML = halted ? '<span class="dot"></span>HALTED' : '<span class="dot"></span>IDLE';
+    // Reflect the halt on the Launch button so it's visibly blocked (the run is
+    // also refused server-side + guarded in runTask). Don't stomp a run in flight.
+    if (launchBtn.textContent.indexOf("running") === -1) {
+      launchBtn.disabled = halted;
+      launchBtn.textContent = halted ? "🛑 Halted — resume to launch" : "▶ Launch Agent";
+    }
+    // Connected-wallet run button, if present.
+    const rc = document.getElementById("run-connected");
+    if (rc) rc.disabled = halted;
   }
   async function setHaltServer(v) {
     halted = v;
@@ -780,23 +935,214 @@
   // Sync with the server's current halt state on load.
   fetch("/api/kill").then((r) => r.json()).then((r) => { halted = !!r.halted; paintHalt(); }).catch(() => {});
 
+  // ---------- Connected wallet (non-custodial: GemWallet / Crossmark / Xaman) ----------
+  const CONN_STORE = "leash.connectedWallet";
+  let connectedWallet = null;
+  try { connectedWallet = JSON.parse(localStorage.getItem(CONN_STORE) || "null"); } catch (e) {}
+  // Network posture from /api/policy (faucet visibility, real-funds banner).
+  let netInfo = { hasFaucet: true, live: false, explorer: "https://testnet.xrpl.org", xamanEnabled: false };
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const usdCentsFrom = (el) => {
+    const v = el ? parseFloat(el.value) : NaN;
+    return Number.isFinite(v) && v > 0 ? Math.round(v * 100) : undefined;
+  };
+
+  // The extension/app connectors. Each: available() / connect() → address /
+  // signSubmit(txjson) → txHash. The key never leaves the wallet.
+  async function gemApi() { return await import("https://esm.sh/@gemwallet/api@3"); }
+  // Only the real Crossmark extension injects window.crossmark. Importing the
+  // SDK from a CDN does NOT prove the extension exists, so detect the injected
+  // provider (with a short grace window in case it injects just after load).
+  function crossmarkInjected() { return typeof window !== "undefined" && !!window.crossmark; }
+  async function crossmarkWaitInjected(ms) {
+    const deadline = Date.now() + (ms || 0);
+    while (!crossmarkInjected() && Date.now() < deadline) await sleep(150);
+    return crossmarkInjected();
+  }
+  async function crossmarkSdk() {
+    if (!crossmarkInjected()) throw new Error("Crossmark extension not detected");
+    if (window.crossmark && window.crossmark.methods) return window.crossmark;
+    const m = await import("https://esm.sh/@crossmarkio/sdk");
+    return m.default || m;
+  }
+  async function xamanRun(txjson) {
+    const p = await fetch("/api/xaman/payload", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tx: txjson }),
+    }).then((r) => r.json());
+    if (p.error) throw new Error(p.error);
+    showXamanQr(p.qr, p.deeplink);
+    try {
+      for (let i = 0; i < 150; i++) {
+        await sleep(2000);
+        const s = await fetch("/api/xaman/status/" + p.uuid).then((r) => r.json());
+        if (s.signed) return { txHash: s.txHash, account: s.account };
+        if (s.resolved && !s.signed) throw new Error("Xaman: rejected in-app");
+      }
+      throw new Error("Xaman: timed out waiting for signature");
+    } finally { hideXamanQr(); }
+  }
+  const connectors = {
+    gem: {
+      label: "GemWallet",
+      async available() { try { const { isInstalled } = await gemApi(); const r = await isInstalled(); return !!(r && r.result && r.result.isInstalled); } catch (e) { return false; } },
+      async connect() { const { getAddress } = await gemApi(); const r = await getAddress(); const a = r && r.result && r.result.address; if (!a) throw new Error("GemWallet: address not granted"); return a; },
+      async signSubmit(tx) { const { submitTransaction } = await gemApi(); const r = await submitTransaction({ transaction: tx }); const h = r && r.result && (r.result.hash || r.result.tx_hash); if (!h) throw new Error("GemWallet: transaction not signed"); return h; },
+    },
+    crossmark: {
+      label: "Crossmark",
+      async available() { return await crossmarkWaitInjected(600); },
+      async connect() { const s = await crossmarkSdk(); const r = await s.methods.signInAndWait(); const a = r && r.response && r.response.data && r.response.data.address; if (!a) throw new Error("Crossmark: sign-in rejected"); return a; },
+      async signSubmit(tx) { const s = await crossmarkSdk(); const r = await s.methods.signAndSubmitAndWait(tx); const d = (r && r.response && r.response.data) || {}; const h = (d.resp && d.resp.result && d.resp.result.hash) || d.hash || d.txHash; if (!h) throw new Error("Crossmark: transaction not signed"); return h; },
+    },
+    xaman: {
+      label: "Xaman", _en: null,
+      async available() { if (this._en !== null) return this._en; try { const r = await fetch("/api/xaman/enabled").then((x) => x.json()); this._en = !!r.enabled; } catch (e) { this._en = false; } return this._en; },
+      async connect() { const { account } = await xamanRun({ TransactionType: "SignIn" }); if (!account) throw new Error("Xaman: no account returned"); return account; },
+      async signSubmit(tx) { const { txHash } = await xamanRun(tx); if (!txHash) throw new Error("Xaman: transaction not signed"); return txHash; },
+    },
+  };
+
+  // ---------- Wallet-picker modal ----------
+  const walletOverlay = $("wallet-overlay");
+  function walletErr(msg) { const e = $("wallet-err"); e.textContent = "⚠ " + msg; e.hidden = false; }
+  function showXamanQr(qr, link) { $("xaman-qr-img").src = qr; $("xaman-qr-link").href = link; $("xaman-qr").hidden = false; }
+  function hideXamanQr() { $("xaman-qr").hidden = true; $("xaman-qr-img").src = ""; }
+  async function refreshPickerStates() {
+    for (const id of ["gem", "crossmark", "xaman"]) {
+      const el = $("wc-" + id), btn = walletOverlay.querySelector('[data-wallet="' + id + '"]');
+      el.textContent = "…"; el.className = "wc-state";
+      const ok = await connectors[id].available();
+      el.textContent = ok ? "detected ✓" : (id === "xaman" ? "not configured" : "not installed");
+      el.classList.add(ok ? "ok" : "no");
+      btn.disabled = !ok;
+    }
+  }
+  function renderFaucetRow() {
+    const row = $("wallet-faucet-row");
+    if (netInfo.hasFaucet) {
+      row.innerHTML = '<div class="btn-row"><button class="btn gold full" id="picker-faucet">⛲ Fund server demo wallet (testnet faucet)</button></div>';
+      $("picker-faucet").addEventListener("click", pickerFaucet);
+    } else {
+      row.innerHTML = '<p class="modal-foot">Mainnet has no faucet — fund your connected wallet with real XRP.</p>';
+    }
+  }
+  async function pickerFaucet() {
+    const b = $("picker-faucet"); if (!b) return;
+    b.disabled = true; b.textContent = "⏳ funding…";
+    try {
+      const r = await fetch("/api/faucet?chain=" + encodeURIComponent(selectedChain || "xrpl"), { method: "POST" }).then((x) => x.json());
+      if (r.error) throw new Error(r.error);
+      await loadWallet(); b.textContent = "✓ funded";
+    } catch (e) { walletErr(e.message || String(e)); b.disabled = false; b.textContent = "⛲ Fund server demo wallet (testnet faucet)"; }
+  }
+  function openWalletPicker() { walletOverlay.hidden = false; $("wallet-err").hidden = true; hideXamanQr(); refreshPickerStates(); renderFaucetRow(); }
+  function closeWalletPicker() { walletOverlay.hidden = true; hideXamanQr(); }
+  $("wallet-close").addEventListener("click", closeWalletPicker);
+  walletOverlay.addEventListener("click", (e) => { if (e.target === walletOverlay) closeWalletPicker(); });
+  walletOverlay.querySelectorAll(".wallet-choice").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.wallet; $("wallet-err").hidden = true;
+      try {
+        const address = await connectors[id].connect();
+        connectedWallet = { id, address };
+        localStorage.setItem(CONN_STORE, JSON.stringify(connectedWallet));
+        closeWalletPicker(); loadWallet();
+        bubble("info", "Connected " + connectors[id].label + ": <code>" + escapeHtml(address) + "</code> — non-custodial (Leash never holds the key).");
+      } catch (e) { walletErr(e.message || String(e)); }
+    });
+  });
+  function disconnectWallet() { connectedWallet = null; localStorage.removeItem(CONN_STORE); loadWallet(); }
+
+  // ---------- Client-signed run: quote → sign-in-wallet → settle ----------
+  async function runConnectedTask() {
+    if (!connectedWallet) return openWalletPicker();
+    // A connected wallet signs a REAL testnet tx — there is no "demo" for it.
+    // Honor the Money toggle: block in demo mode instead of silently going live.
+    if (!liveMoney) {
+      bubble("error", "🔗 Connected-wallet runs sign a <b>real</b> testnet payment — set <b>Money → Live</b> to proceed, or disconnect to use demo money.");
+      return;
+    }
+    if (halted) { bubble("error", "🛑 Halted — resume to launch."); return; }
+    const query = ($("task-input").value || "compare AI coding tools 2026").slice(0, 500);
+    startRunDivider(query); setWorking(true);
+    const rc = $("run-connected"); if (rc) rc.disabled = true;
+    try {
+      bubble("thinking", "Requesting a policy-gated quote (no signature yet)…");
+      const q = await fetch("/api/quote", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, asset: selectedAsset, fromAddress: connectedWallet.address, minUsdCents: usdCentsFrom($("policy-min")), maxUsdCents: usdCentsFrom($("policy-max")), priceUsdCents: usdCentsFrom($("price-input")) }),
+      }).then((r) => r.json());
+      if (q.error) throw new Error(q.error);
+      if (!q.decision || q.decision.kind !== "allow" || !q.unsignedTx) {
+        const d = q.decision || {};
+        logEvent({ type: "policy_decision", decision: d.kind || "deny", reason: d.reason || "", gate: d.gate });
+        bubble("error", "Policy " + (d.kind || "deny") + ": " + (d.reason || "") + " — no unsigned tx produced, so no signature is possible.");
+        return;
+      }
+      logEvent({ type: "policy_decision", decision: "allow" });
+      bubble("thinking", "Sign in " + connectors[connectedWallet.id].label + " — approve the payment in your wallet…");
+      const txHash = await connectors[connectedWallet.id].signSubmit(q.unsignedTx.tx);
+      bubble("info", "Signed &amp; submitted: <code>" + escapeHtml(txHash) + "</code>");
+      bubble("thinking", "Verifying settlement on the ledger…");
+      const s = await fetch("/api/settle", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, txHash }),
+      }).then((r) => r.json());
+      if (!s.ok) throw new Error(s.error || "settle verification failed");
+      logEvent({ type: "unlocked", service: "research-api", hash: txHash });
+      bubble("info", 'Settled ✓ — <a href="' + s.explorer + '" target="_blank" rel="noopener" style="color:var(--gold)">View on Explorer ↗</a>');
+    } catch (e) {
+      logEvent({ type: "error", message: e.message || String(e) });
+    } finally {
+      setWorking(false);
+      const rc2 = $("run-connected"); if (rc2) rc2.disabled = false;
+      loadWallet();
+    }
+  }
+
   // ---------- Wallet panel ----------
   async function loadWallet() {
     try {
-      const w = await fetch("/api/wallet?chain=" + encodeURIComponent(selectedChain || "xrpl")).then((r) => r.json());
-      if (w.error) { $("wallet").innerHTML = `<div class="wallet-row"><span class="k">status</span><span class="v">${escapeHtml(w.error)}</span></div>`; return; }
-      $("wallet").innerHTML =
-        `<div class="wallet-row"><span class="k">balance</span><span class="v gold">${escapeHtml(w.balance)} XRP${xrpUsd ? ` <span style="color:var(--faint);font-size:11px">≈ ${centsToUsd(Number(w.balance) * xrpUsd * 100)}</span>` : ""}</span></div>` +
-        `<div class="wallet-row"><span class="k">address</span><span class="v addr">${escapeHtml(w.address)}</span></div>` +
-        `<div class="btn-row"><button class="btn gold full" id="faucet-btn">⛲ Fund from testnet faucet</button></div>`;
-      $("faucet-btn").addEventListener("click", async () => {
-        const b = $("faucet-btn"); b.disabled = true; b.textContent = "⏳ funding…";
-        try { await fetch("/api/faucet?chain=" + encodeURIComponent(selectedChain || "xrpl"), { method: "POST" }); }
-        catch (e) { /* ignore */ }
-        await loadWallet();
-      });
+      let html = "";
+      if (connectedWallet) {
+        const c = connectors[connectedWallet.id];
+        html += '<div class="wallet-connected">🔗 ' + escapeHtml((c && c.label) || connectedWallet.id) + ' connected · non-custodial'
+          + '<button class="wc-disc" id="wallet-disconnect">disconnect</button></div>'
+          + '<div class="wallet-row"><span class="k">your address</span><span class="v addr">' + escapeHtml(connectedWallet.address) + '</span></div>'
+          + '<div class="btn-row"><button class="btn launch full" id="run-connected"' + (liveMoney ? "" : " disabled") + '>▶ Run research · pay from my wallet</button></div>'
+          + '<span class="mode-hint' + (liveMoney ? " warn" : "") + '" style="display:block;margin:-4px 0 8px">'
+          + (liveMoney ? "⚠ signs a real testnet payment in your wallet" : "set Money → Live to pay from your wallet") + '</span>'
+          + '<div class="btn-row"><button class="btn full" id="connect-btn">👛 Change wallet</button></div>';
+      } else if (liveMoney) {
+        // Live money = the agent pays from YOUR connected wallet. Until you
+        // connect one, there is no balance to show — the server-custodied demo
+        // wallet is not yours, so we don't display it here.
+        html += '<div class="wallet-row"><span class="k">balance</span><span class="v">—</span></div>'
+          + '<span class="mode-hint warn" style="display:block;margin-bottom:8px">⚠ Live — connect your own wallet to pay real testnet XRP. Leash never holds it.</span>'
+          + '<div class="btn-row"><button class="btn gold full" id="connect-btn">👛 Connect your own wallet</button></div>';
+      } else {
+        // Demo money = settlement is simulated by the Leash-custodied demo agent
+        // wallet (self-host is non-custodial; the hosted demo signs for you).
+        const w = await fetch("/api/wallet?chain=" + encodeURIComponent(selectedChain || "xrpl")).then((r) => r.json());
+        if (w.error) {
+          html += '<div class="wallet-row"><span class="k">status</span><span class="v">' + escapeHtml(w.error) + '</span></div>';
+        } else {
+          html += '<div class="wallet-row"><span class="k">demo balance</span><span class="v gold">' + escapeHtml(w.balance) + " XRP"
+            + (xrpUsd ? ' <span style="color:var(--faint);font-size:11px">≈ ' + centsToUsd(Number(w.balance) * xrpUsd * 100) + "</span>" : "") + "</span></div>"
+            + '<div class="wallet-row"><span class="k">demo address</span><span class="v addr">' + escapeHtml(w.address) + "</span></div>";
+        }
+        html += '<span class="mode-hint" style="display:block;margin-bottom:8px">Demo — Leash-custodied agent wallet; settlement is simulated, no XRP moves.</span>'
+          + '<div class="btn-row"><button class="btn gold full" id="connect-btn">👛 Connect your own wallet</button></div>';
+      }
+      $("wallet").innerHTML = html;
+      $("connect-btn").addEventListener("click", openWalletPicker);
+      const disc = $("wallet-disconnect"); if (disc) disc.addEventListener("click", disconnectWallet);
+      const rc = $("run-connected"); if (rc) rc.addEventListener("click", runConnectedTask);
     } catch (e) {
-      $("wallet").innerHTML = `<div class="wallet-row"><span class="k">status</span><span class="v">wallet unavailable</span></div>`;
+      $("wallet").innerHTML = '<div class="wallet-row"><span class="k">status</span><span class="v">wallet unavailable</span></div>'
+        + '<div class="btn-row"><button class="btn gold full" id="connect-btn">👛 Connect wallet</button></div>';
+      const cb = $("connect-btn"); if (cb) cb.addEventListener("click", openWalletPicker);
     }
   }
   loadWallet();
@@ -809,12 +1155,33 @@
   let runData = null;               // accumulates this run's deliverable + cost
   const resultCard = $("result-card");
   const resultBody = $("result-body");
+  function paintLiveBanner() {
+    const el = $("live-banner");
+    if (!el) return;
+    if (netInfo.live) {
+      el.className = "live-banner on";
+      el.innerHTML = "⚠ <b>LIVE · REAL FUNDS</b> — this is XRPL <b>mainnet</b>. Payments move real XRP from your connected wallet. Caps are clamped low.";
+      el.hidden = false;
+    } else {
+      el.className = "live-banner test";
+      el.innerHTML = "🧪 <b>Testnet</b> — no real money. Settlement is real on-chain, on XRPL testnet.";
+      el.hidden = false;
+    }
+  }
   async function loadPolicy() {
     try {
       const p = await fetch("/api/policy").then((r) => r.json());
       const total = Number(p.totalBudgetUsdCents) || 1;
       policyTotalUsdCents = Number(p.totalBudgetUsdCents);
       xrpUsd = Number(p.xrpUsd) || null;
+      // Capture network posture (drives the faucet visibility + live banner).
+      netInfo = {
+        hasFaucet: p.hasFaucet !== false,
+        live: !!p.live,
+        explorer: p.explorer || netInfo.explorer,
+        xamanEnabled: !!p.xamanEnabled,
+      };
+      paintLiveBanner();
       const pct = (c) => Math.min(100, (Number(c) / total) * 100).toFixed(1);
       const dollars = (c) => (Number(c) / 100).toFixed(2);
       $("policy").innerHTML = `
@@ -853,10 +1220,11 @@
           <div class="amt">${centsToUsd(p.totalBudgetUsdCents)}</div>
           <div class="meter">
             <span style="width:100%;opacity:.18"></span>
-            <span style="width:${pct(p.dailyCapUsdCents)}%;opacity:.7"></span>
+            <span id="budget-spent-bar" style="width:0%;opacity:.9;background:var(--gold)"></span>
           </div>
           <div class="meter-legend">
-            <span><i style="background:rgba(232,178,58,.7)"></i>daily cap ${centsToUsd(p.dailyCapUsdCents)}</span>
+            <span><i style="background:var(--gold)"></i><b id="budget-spent">$0.00</b> spent · <b id="budget-left">${centsToUsd(p.totalBudgetUsdCents)}</b> left · daily cap ${centsToUsd(p.dailyCapUsdCents)}</span>
+            <button class="wc-disc" id="budget-reset" style="margin-left:auto;flex:none">reset</button>
           </div>
         </div>
         <div class="kv"><span class="k">Merchant</span><span class="v mono">${p.merchantPayTo.slice(0,8)}…${p.merchantPayTo.slice(-6)}</span></div>
@@ -881,14 +1249,54 @@
         $("b-min").textContent = fmt(minV);
         $("b-max").textContent = fmt(maxV);
         $("band").classList.toggle("invalid", minV > maxV && maxV > 0);
+        renderPriceHint();
       }
       $("policy-min").addEventListener("input", renderBand);
       $("policy-max").addEventListener("input", renderBand);
       renderBand();
+      // Budget reset (demo) + paint the current cumulative spend.
+      const br = $("budget-reset");
+      if (br) br.addEventListener("click", async () => {
+        try { const s = await fetch("/api/spend/reset", { method: "POST" }).then((r) => r.json());
+          applySpend(s.spentTotalUsdCents, s.spentTodayUsdCents); bubble("info", "🧹 Budget reset."); } catch (e) {}
+      });
+      loadSpend();
     } catch (e) {
       $("policy").textContent = "(policy unavailable — is the backend running?)";
     }
   }
+  // Cumulative spend (all runs) — kept in sync via spend_update events + /api/spend.
+  let cumulativeSpentCents = 0;
+  function applySpend(spentTotal, _spentToday) {
+    cumulativeSpentCents = Number(spentTotal) || 0;
+    const budget = policyTotalUsdCents || 0;
+    const bar = $("budget-spent-bar");
+    if (bar && budget > 0) bar.style.width = Math.min(100, (cumulativeSpentCents / budget) * 100) + "%";
+    const sp = $("budget-spent"); if (sp) sp.textContent = centsToUsd(cumulativeSpentCents);
+    const lf = $("budget-left"); if (lf) lf.textContent = centsToUsd(Math.max(0, budget - cumulativeSpentCents));
+  }
+  async function loadSpend() {
+    try { const s = await fetch("/api/spend").then((r) => r.json()); applySpend(s.spentTotalUsdCents, s.spentTodayUsdCents); }
+    catch (e) { /* offline */ }
+  }
+  // Explain what the entered call price does against the current min/max band.
+  function renderPriceHint() {
+    const el = $("price-hint"); if (!el) return;
+    const priceEl = $("price-input");
+    const price = priceEl ? parseFloat(priceEl.value) || 0 : 0;
+    const minEl = $("policy-min"), maxEl = $("policy-max");
+    const min = minEl ? parseFloat(minEl.value) || 0 : 0;
+    const max = maxEl ? parseFloat(maxEl.value) || 0 : 0;
+    let msg, warn = false;
+    if (price <= 0) msg = "enter a price per call";
+    else if (max > 0 && price > max) msg = `> max ($${max.toFixed(2)}) → 🛑 blocked by policy`;
+    else if (price > min) { msg = `between min & max → 🟡 needs your approval`; warn = true; }
+    else msg = `≤ min ($${min.toFixed(2)}) → ✓ auto-pays`;
+    el.textContent = msg;
+    el.classList.toggle("warn", warn);
+  }
+  const priceInputEl = $("price-input");
+  if (priceInputEl) priceInputEl.addEventListener("input", renderPriceHint);
   loadPolicy();
 
   // ---------- Stream rendering ----------
@@ -959,6 +1367,7 @@
     else if (e.type === "challenge") runData.merchantCents = Number(e.amountUsdCents);
     else if (e.type === "fee") { runData.feeCents = Number(e.amountUsdCents); runData.feeBps = e.bps; }
     else if (e.type === "synthesis") { runData.summary = e.text; runData.summaryModel = e.model; }
+    else if (e.type === "spend_update") { runData.spentTotal = Number(e.spentTotalUsdCents); }
     else if (e.type === "unlocked") { runData.results = e.results || []; runData.query = e.query; }
     else if (e.type === "settled") {
       if (e.kind === "fee") { runData.feeHash = e.hash; runData.feeExplorer = e.explorer; }
@@ -975,13 +1384,37 @@
     }
   }
 
+  // Tool-agent run finished: fold the loop's totals into the Result card.
+  // (Per-event capture still fills results/summary; the done payload is the
+  // authoritative sum across MULTIPLE tool-call payments in one run.)
+  function finishToolRun(d) {
+    if (!runData) runData = {};
+    if (d.answer && !runData.summary) runData.summary = d.answer;
+    const pays = d.payments || [];
+    const merch = pays.filter((p) => p && p.kind !== "fee");
+    const fees = pays.filter((p) => p && p.kind === "fee");
+    const sum = (xs) => xs.reduce((s, p) => s + (Number(p.amountUsdCents) || 0), 0);
+    if (merch.length) runData.merchantCents = sum(merch);
+    if (fees.length) runData.feeCents = sum(fees);
+    const last = merch[merch.length - 1];
+    if (last) { runData.hash = last.hash || runData.hash; runData.explorer = last.explorer || runData.explorer; }
+    const lastFee = fees[fees.length - 1];
+    if (lastFee) { runData.feeHash = lastFee.hash || runData.feeHash; runData.feeExplorer = lastFee.explorer || runData.feeExplorer; }
+    const n = pays.length;
+    logEvent({ type: "complete_tools", steps: d.steps, payments: n, aiCostUsdCents: d.aiCostUsdCents });
+    showResult();
+  }
+
   function showResult() {
     const r = runData || {};
-    if (!r.hash && !(r.results && r.results.length)) return;
+    if (!r.hash && !(r.results && r.results.length) && !r.summary) return;
     const merchant = r.merchantCents || 0;
     const fee = r.feeCents || 0;
     const total = merchant + fee;
-    const remaining = policyTotalUsdCents != null ? centsToUsd(policyTotalUsdCents - total) : "—";
+    // Cumulative across all runs (from the server's spend store) — falls back to
+    // this run's total for older streams that don't emit spend_update.
+    const spentCumulative = r.spentTotal != null ? r.spentTotal : total;
+    const remaining = policyTotalUsdCents != null ? centsToUsd(policyTotalUsdCents - spentCumulative) : "—";
     const items = (r.results || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("")
       || `<li style="color:var(--faint)">(no items returned)</li>`;
     const feeTile = fee > 0
@@ -1004,7 +1437,7 @@
       <div class="cost-grid">
         <div class="cost-tile"><div class="ct-k">Merchant</div><div class="ct-v">${centsToUsd(merchant)}</div></div>
         ${feeTile}
-        <div class="cost-tile"><div class="ct-k">Total spent</div><div class="ct-v gold">${centsToUsd(total)}</div></div>
+        <div class="cost-tile"><div class="ct-k">Spent · all runs</div><div class="ct-v gold">${centsToUsd(spentCumulative)}<span style="color:var(--faint);font-size:11px"> · ${centsToUsd(total)} this run</span></div></div>
         <div class="cost-tile"><div class="ct-k">Budget left</div><div class="ct-v green">${remaining}</div></div>
       </div>
       <div class="result-actions">
@@ -1102,9 +1535,15 @@
         return bubble("challenge",
           `🏷️ <b>Leash fee ${e.bps / 100}%</b> · ${centsToUsd(e.amountUsdCents)}<br>
           • → <code>${escapeHtml(e.destination)}</code>`);
-      case "signing":
+      case "signing": {
+        const what = e.kind === "fee" ? "the fee" : "Payment";
+        // Demo money (or credit funding) never touches the chain — don't claim to broadcast.
+        const realChain = liveMoney && selectedFunding !== "credit";
         return bubble("signing",
-          `✍️ signing + broadcasting ${e.kind === "fee" ? "the fee" : "Payment"} on testnet…`);
+          realChain
+            ? `✍️ signing + broadcasting ${what} on testnet…`
+            : `✍️ preparing ${what} · simulating settlement (demo)…`);
+      }
       case "settled": {
         const base = e.kind === "fee" ? "FEE" : "TX";
         const label = e.simulated ? `${base} SIMULATED` : `${base} SETTLED`;
@@ -1133,6 +1572,14 @@
       case "approval_resolved":
         return bubble("approval_resolved " + e.decision,
           `${e.decision === "approve" ? "✓" : "✕"} <b>You ${e.decision === "approve" ? "approved" : "denied"}</b> the ${escapeHtml(e.kind)} payment.`);
+      case "spend_update": {
+        // Cumulative across runs — reflect it in the Policy budget bar live.
+        applySpend(e.spentTotalUsdCents, e.spentTodayUsdCents);
+        const left = (e.totalBudgetUsdCents != null)
+          ? centsToUsd(e.totalBudgetUsdCents - e.spentTotalUsdCents) : "—";
+        return bubble("wallet_loaded",
+          `💰 budget: <b style="color:var(--gold)">${centsToUsd(e.spentTotalUsdCents)}</b> spent · ${left} left (all runs)`);
+      }
       case "halted":
         return bubble("halted", `🛑 <b>Halted</b> — ${escapeHtml(e.reason)}. No signature produced.`);
       case "thinking":
@@ -1148,6 +1595,23 @@
       }
       case "complete":
         return bubble("complete", `✓ Task complete.`);
+      case "complete_tools":
+        return bubble("complete",
+          `✓ Tool agent done · ${Number(e.steps) || 0} step${Number(e.steps) === 1 ? "" : "s"} · ` +
+          `${Number(e.payments) || 0} payment${Number(e.payments) === 1 ? "" : "s"}` +
+          `${e.aiCostUsdCents ? ` · AI cost ${e.aiCostUsdCents}¢` : ""}`);
+      case "tool_call": {
+        const argsStr = e.args && Object.keys(e.args).length ? escapeHtml(JSON.stringify(e.args)) : "";
+        return bubble("tool_call",
+          `🧰 <b>model proposes</b> <code>${escapeHtml(e.name)}</code>` +
+          (argsStr ? `<br>• args: <code>${argsStr}</code>` : ""));
+      }
+      case "tool_result":
+        return bubble("tool_result" + (e.ok ? "" : " fail"),
+          `${e.ok ? "✔" : "✗"} <code>${escapeHtml(e.name)}</code> → ${escapeHtml(e.summary)}`);
+      case "assistant_text":
+        return bubble("assistant_text",
+          `🗣 <b>model</b> · step ${Number(e.step) || "?"}<br>${escapeHtml(e.text)}`);
       case "error":
         return bubble("error", `✗ ${escapeHtml(e.message)}`);
       default:
@@ -1175,9 +1639,9 @@
     const chain = selectedChain;
     const apiKey = getKey() || undefined;
 
-    // The app never picks a model: a live agent run requires the user to choose one.
-    if (liveAgent && !model) {
-      bubble("error", "Select a model first — the live agent needs one (or switch Agent to Demo).");
+    // The app never picks a model: live + tools agent runs require the user to choose one.
+    if (agentMode !== "demo" && !model) {
+      bubble("error", "Select a model first — the " + (agentMode === "tools" ? "tool" : "live") + " agent needs one (or switch Agent to Demo).");
       return;
     }
 
@@ -1188,17 +1652,22 @@
     };
     const minUsdCents = usdToCents($("policy-min"));
     const maxUsdCents = usdToCents($("policy-max"));
+    const priceUsdCents = usdToCents($("price-input"));
 
     runData = {};
     resultCard.hidden = true;
     startRunDivider(query); // append to history instead of wiping it
     setWorking(true);
 
+    const isTools = agentMode === "tools";
     try {
-      const resp = await fetch("/api/task", {
+      const resp = await fetch(isTools ? "/api/agent" : "/api/task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, model, chain, asset: selectedAsset, funding: selectedFunding, apiKey, minUsdCents, maxUsdCents, liveAgent, liveMoney }),
+        body: JSON.stringify(isTools
+          // Tool loop: the model decides WHEN to pay; the policy engine decides IF.
+          ? { goal: query, model, chain, asset: selectedAsset, funding: selectedFunding, apiKey, minUsdCents, maxUsdCents, liveMoney }
+          : { query, model, chain, asset: selectedAsset, funding: selectedFunding, apiKey, minUsdCents, maxUsdCents, priceUsdCents, liveAgent: agentMode === "live", liveMoney }),
       });
       if (!resp.body) throw new Error("no response body");
       const reader = resp.body.getReader();
@@ -1221,8 +1690,9 @@
           try {
             const parsed = JSON.parse(data);
             if (ev === "agent") logEvent(parsed);
-            else if (ev === "done" && !parsed.ok && parsed.error) {
-              logEvent({ type: "error", message: parsed.error });
+            else if (ev === "done") {
+              if (!parsed.ok && parsed.error) logEvent({ type: "error", message: parsed.error });
+              else if (parsed.ok && isTools) finishToolRun(parsed);
             }
           } catch (e) {
             // ignore malformed lines

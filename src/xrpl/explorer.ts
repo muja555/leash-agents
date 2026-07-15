@@ -1,7 +1,11 @@
+import { config } from "../config.js";
+
+// Network-aware explorer links: testnet.xrpl.org on testnet,
+// livenet.xrpl.org on mainnet (driven by config.xrpl.explorer / XRPL_LIVE).
 export function txExplorerUrl(hash: string): string {
-  return `https://testnet.xrpl.org/transactions/${hash}`;
+  return `${config.xrpl.explorer}/transactions/${hash}`;
 }
 
 export function accountExplorerUrl(address: string): string {
-  return `https://testnet.xrpl.org/accounts/${address}`;
+  return `${config.xrpl.explorer}/accounts/${address}`;
 }
